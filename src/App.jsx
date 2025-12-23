@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import Header from './components/application_component/Header';
 import Footer from './components/application_component/Footer';
 import Chatbox from './components/Chatbox/Chatbox';
+import Login from './components/auth/Login';
+import Signup from './components/auth/Signup';
 import Home from './pages/Home';
 import Menu from './pages/Menu';
 import ContactUs from './pages/ContactUs';
@@ -63,6 +65,8 @@ function App() {
           <Route path="/booking" element={<Booking />} />
           <Route path="/table" element={<Table />} />
           <Route path="/user-profile" element={<UserProfile />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           
           {/* Admin routes */}
