@@ -5,15 +5,12 @@ import { ShoppingCart, Search } from 'lucide-react';
 
 export default function Menu() {
     const navigate = useNavigate();
-    const [menu, setMenu] = useState([]);
+    const [menuCategories, setMenuCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [cart, setCart] = useState([]);
-
-    // Categories
-    const categories = ['All', 'Main Course', 'Beverages', 'Desserts'];
 
     useEffect(() => {
         fetchMenu();
@@ -23,13 +20,26 @@ export default function Menu() {
         setLoading(true);
         try {
             const response = await api.menu.list();
-            setMenu(response.data);
+            setMenuCategories(response.data || []);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
     };
+
+    // Flatten dishes from all categories
+    const allDishes = menuCategories.flatMap(category =>
+        category.dishes?.map(dish => ({
+            ...dish,
+            category: category.title,
+            // Generate unique ID for cart
+            id: `${category.id}-${dish.name}`
+        })) || []
+    );
+
+    // Get unique categories from data
+    const categories = ['All', ...new Set(menuCategories.map(cat => cat.title))];
 
     const addToCart = (item) => {
         const existingItem = cart.find(i => i.id === item.id);
@@ -68,11 +78,11 @@ export default function Menu() {
         navigate('/booking', { state: { selectedItems: cart } });
     };
 
-    // Filter menu
-    const filteredMenu = menu.filter(item => {
+    // Filter dishes
+    const filteredMenu = allDishes.filter(item => {
         const matchCategory = selectedCategory === 'All' || item.category === selectedCategory;
         const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchCategory && matchSearch && item.available;
+        return matchCategory && matchSearch;
     });
 
     if (loading) {
@@ -126,8 +136,8 @@ export default function Menu() {
                                             key={category}
                                             onClick={() => setSelectedCategory(category)}
                                             className={`w-full text-left px-4 py-2 rounded-lg transition-all ${selectedCategory === category
-                                                    ? 'bg-teal-500 text-white font-semibold'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                ? 'bg-teal-500 text-white font-semibold'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {category}
@@ -145,38 +155,58 @@ export default function Menu() {
                                 <p className="text-xl text-gray-600">No dishes found</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 {filteredMenu.map(item => (
                                     <div
                                         key={item.id}
-                                        className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                                        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
                                     >
-                                        <img
-                                            src={item.image}
-                                            alt={item.name}
-                                            className="w-full h-48 object-cover"
-                                        />
-                                        <div className="p-6">
-                                            <h3 className="text-xl font-bold mb-2 text-gray-800">
-                                                {item.name}
-                                            </h3>
-                                            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                                                {item.description}
-                                            </p>
-                                            <div className="flex items-center justify-between mb-4">
-                                                <span className="text-2xl font-bold text-teal-600">
-                                                    ${(item.price / 1000).toFixed(2)}
-                                                </span>
-                                                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                        {/* Image */}
+                                        <div className="relative h-56 overflow-hidden bg-gray-100">
+                                            <img
+                                                src={item.image || 'https://placehold.co/400x300/teal/white?text=No+Image'}
+                                                alt={item.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.src = 'https://placehold.co/400x300/gray/white?text=Image+Not+Available';
+                                                }}
+                                            />
+                                            {/* Category Badge */}
+                                            <div className="absolute top-3 right-3">
+                                                <span className="bg-white/90 backdrop-blur-sm text-teal-600 font-semibold px-3 py-1 rounded-full text-xs shadow-md">
                                                     {item.category}
                                                 </span>
                                             </div>
-                                            <button
-                                                onClick={() => addToCart(item)}
-                                                className="w-full bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600 transition-all shadow-md"
-                                            >
-                                                Add to Cart
-                                            </button>
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="p-5">
+                                            {/* Title */}
+                                            <h3 className="text-xl font-bold mb-2 text-gray-800 line-clamp-1">
+                                                {item.name}
+                                            </h3>
+
+                                            {/* Description */}
+                                            <p className="text-gray-600 text-sm mb-4 line-clamp-2 h-10">
+                                                {item.description || 'Delicious dish from our menu'}
+                                            </p>
+
+                                            {/* Price & Add to Cart */}
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-gray-500 mb-1">Price</p>
+                                                    <p className="text-2xl font-bold text-teal-600">
+                                                        {item.price ? `${item.price.toLocaleString('vi-VN')}₫` : 'N/A'}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => addToCart(item)}
+                                                    className="bg-teal-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-teal-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                                                >
+                                                    <ShoppingCart className="w-4 h-4" />
+                                                    Add
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -198,7 +228,7 @@ export default function Menu() {
                                         {cart.length} items selected
                                     </p>
                                     <p className="text-teal-600 font-semibold text-xl">
-                                        Total: ${(getTotalPrice() / 1000).toFixed(2)}
+                                        Total: {getTotalPrice().toLocaleString('vi-VN')}₫
                                     </p>
                                 </div>
                             </div>
@@ -218,7 +248,7 @@ export default function Menu() {
                                         <img src={item.image} alt={item.name} className="w-12 h-12 rounded object-cover" />
                                         <div>
                                             <p className="font-semibold">{item.name}</p>
-                                            <p className="text-sm text-gray-600">${(item.price / 1000).toFixed(2)}</p>
+                                            <p className="text-sm text-gray-600">{item.price?.toLocaleString('vi-VN')}₫</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
