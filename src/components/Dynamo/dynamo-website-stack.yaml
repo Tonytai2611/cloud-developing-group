@@ -1,0 +1,359 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DynamoDB Stack for Website Integration'
+
+# ==================== PARAMETERS ====================
+Parameters:
+  EnvironmentName: 
+    Type: String
+    Default: dev
+    AllowedValues: 
+      - dev
+      - staging
+      - prod
+    Description: Environment name for resource tagging
+
+  TableName:
+    Type: String
+    Default: WebsiteData
+    Description: Name of the DynamoDB table
+
+  ReadCapacityUnits:
+    Type:  Number
+    Default:  5
+    MinValue: 1
+    MaxValue: 100
+    Description:  Provisioned read capacity units
+
+  WriteCapacityUnits:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 100
+    Description: Provisioned write capacity units
+
+  EnablePointInTimeRecovery:
+    Type: String
+    Default: 'false'
+    AllowedValues: 
+      - 'true'
+      - 'false'
+    Description: Enable point-in-time recovery for backups
+
+Resources:
+  # ==================== DYNAMODB TABLES ====================
+
+  # Main table for storing website visitor/user data
+  VisitorsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}-Visitors-${EnvironmentName}'
+      BillingMode:  PROVISIONED
+      AttributeDefinitions: 
+        # Primary key attributes
+        - AttributeName: visitorId
+          AttributeType: S
+        - AttributeName:  visitTimestamp
+          AttributeType: N
+        # GSI attributes
+        - AttributeName:  ipAddress
+          AttributeType: S
+      KeySchema:
+        # Partition key - unique visitor ID
+        - AttributeName: visitorId
+          KeyType:  HASH
+        # Sort key - timestamp for time-based queries
+        - AttributeName: visitTimestamp
+          KeyType: RANGE
+      ProvisionedThroughput: 
+        ReadCapacityUnits: !Ref ReadCapacityUnits
+        WriteCapacityUnits: !Ref WriteCapacityUnits
+      # Global Secondary Index for querying by IP address
+      GlobalSecondaryIndexes: 
+        - IndexName:  IPAddressIndex
+          KeySchema: 
+            - AttributeName:  ipAddress
+              KeyType: HASH
+            - AttributeName: visitTimestamp
+              KeyType: RANGE
+          Projection: 
+            ProjectionType:  ALL
+          ProvisionedThroughput: 
+            ReadCapacityUnits: !Ref ReadCapacityUnits
+            WriteCapacityUnits: !Ref WriteCapacityUnits
+      # Time-to-live for automatic data expiration (optional)
+      TimeToLiveSpecification: 
+        AttributeName:  ttl
+        Enabled: true
+      # Point-in-time recovery for backups
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !Ref EnablePointInTimeRecovery
+      # Server-side encryption
+      SSESpecification: 
+        SSEEnabled:  true
+      Tags:
+        - Key: Name
+          Value: !Sub '${TableName}-Visitors-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Table for storing website content/pages
+  ContentTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}-Content-${EnvironmentName}'
+      BillingMode: PAY_PER_REQUEST  # On-demand capacity for variable workloads
+      AttributeDefinitions: 
+        - AttributeName: pageId
+          AttributeType: S
+        - AttributeName: category
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: N
+      KeySchema: 
+        - AttributeName:  pageId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CategoryIndex
+          KeySchema: 
+            - AttributeName: category
+              KeyType: HASH
+            - AttributeName:  createdAt
+              KeyType: RANGE
+          Projection: 
+            ProjectionType: ALL
+      SSESpecification: 
+        SSEEnabled:  true
+      Tags:
+        - Key: Name
+          Value: !Sub '${TableName}-Content-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Table for user sessions
+  SessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}-Sessions-${EnvironmentName}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: sessionId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: sessionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserSessionsIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${TableName}-Sessions-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # ==================== IAM ROLE FOR EC2/LAMBDA ====================
+
+  # IAM Role for EC2 instances or Lambda to access DynamoDB
+  DynamoDBAccessRole:
+    Type:  AWS::IAM:: Role
+    Properties: 
+      RoleName: !Sub 'DynamoDB-WebAccess-${EnvironmentName}'
+      AssumeRolePolicyDocument:
+        Version:  '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - ec2.amazonaws.com
+                - lambda.amazonaws.com
+            Action:  sts:AssumeRole
+      Policies:
+        - PolicyName: DynamoDBAccessPolicy
+          PolicyDocument:
+            Version:  '2012-10-17'
+            Statement:
+              # Read/Write access to all tables
+              - Effect:  Allow
+                Action: 
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb: Scan
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                Resource: 
+                  - !GetAtt VisitorsTable.Arn
+                  - !Sub '${VisitorsTable.Arn}/index/*'
+                  - !GetAtt ContentTable.Arn
+                  - !Sub '${ContentTable.Arn}/index/*'
+                  - !GetAtt SessionsTable.Arn
+                  - !Sub '${SessionsTable.Arn}/index/*'
+              # Allow DescribeTable for health checks
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeTable
+                Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub 'DynamoDB-WebAccess-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Instance Profile for EC2
+  DynamoDBInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      InstanceProfileName: !Sub 'DynamoDB-WebAccess-Profile-${EnvironmentName}'
+      Roles:
+        - !Ref DynamoDBAccessRole
+
+  # ==================== SSM PARAMETERS ====================
+
+  # Store table names in Parameter Store for easy retrieval
+  VisitorsTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name:  !Sub '/website/${EnvironmentName}/dynamodb/visitors-table'
+      Type: String
+      Value: !Ref VisitorsTable
+      Description: DynamoDB Visitors table name
+
+  ContentTableNameParameter:
+    Type:  AWS::SSM:: Parameter
+    Properties: 
+      Name: !Sub '/website/${EnvironmentName}/dynamodb/content-table'
+      Type:  String
+      Value:  !Ref ContentTable
+      Description: DynamoDB Content table name
+
+  SessionsTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/website/${EnvironmentName}/dynamodb/sessions-table'
+      Type: String
+      Value: !Ref SessionsTable
+      Description: DynamoDB Sessions table name
+
+  RegionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/website/${EnvironmentName}/dynamodb/region'
+      Type:  String
+      Value:  !Ref AWS::Region
+      Description:  AWS Region for DynamoDB
+
+  # ==================== AUTO SCALING (Optional) ====================
+
+  # Read capacity auto scaling for Visitors table
+  VisitorsTableReadScalingTarget:
+    Type:  AWS::ApplicationAutoScaling::ScalableTarget
+    Properties: 
+      MaxCapacity: 100
+      MinCapacity: 5
+      ResourceId: !Sub 'table/${VisitorsTable}'
+      RoleARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/dynamodb.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_DynamoDBTable'
+      ScalableDimension:  dynamodb:table:ReadCapacityUnits
+      ServiceNamespace: dynamodb
+
+  VisitorsTableReadScalingPolicy:
+    Type:  AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties: 
+      PolicyName:  VisitorsTableReadAutoScaling
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref VisitorsTableReadScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: DynamoDBReadCapacityUtilization
+        TargetValue: 70.0
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 60
+
+  # Write capacity auto scaling for Visitors table
+  VisitorsTableWriteScalingTarget:
+    Type:  AWS::ApplicationAutoScaling::ScalableTarget
+    Properties: 
+      MaxCapacity: 100
+      MinCapacity: 5
+      ResourceId: !Sub 'table/${VisitorsTable}'
+      RoleARN:  !Sub 'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/dynamodb.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_DynamoDBTable'
+      ScalableDimension: dynamodb:table:WriteCapacityUnits
+      ServiceNamespace: dynamodb
+
+  VisitorsTableWriteScalingPolicy: 
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: VisitorsTableWriteAutoScaling
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:  !Ref VisitorsTableWriteScalingTarget
+      TargetTrackingScalingPolicyConfiguration: 
+        PredefinedMetricSpecification: 
+          PredefinedMetricType:  DynamoDBWriteCapacityUtilization
+        TargetValue: 70.0
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 60
+
+# ==================== OUTPUTS ====================
+Outputs:
+  VisitorsTableName:
+    Description:  Name of the Visitors DynamoDB table
+    Value: !Ref VisitorsTable
+    Export:
+      Name:  !Sub '${AWS::StackName}-VisitorsTableName'
+
+  VisitorsTableArn:
+    Description: ARN of the Visitors DynamoDB table
+    Value:  !GetAtt VisitorsTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-VisitorsTableArn'
+
+  ContentTableName: 
+    Description: Name of the Content DynamoDB table
+    Value: !Ref ContentTable
+    Export: 
+      Name: !Sub '${AWS::StackName}-ContentTableName'
+
+  ContentTableArn: 
+    Description: ARN of the Content DynamoDB table
+    Value: !GetAtt ContentTable.Arn
+    Export:
+      Name:  !Sub '${AWS::StackName}-ContentTableArn'
+
+  SessionsTableName:
+    Description: Name of the Sessions DynamoDB table
+    Value: !Ref SessionsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-SessionsTableName'
+
+  SessionsTableArn: 
+    Description: ARN of the Sessions DynamoDB table
+    Value: !GetAtt SessionsTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-SessionsTableArn'
+
+  DynamoDBAccessRoleArn: 
+    Description: ARN of the IAM role for DynamoDB access
+    Value: !GetAtt DynamoDBAccessRole.Arn
+    Export: 
+      Name: !Sub '${AWS::StackName}-DynamoDBAccessRoleArn'
+
+  InstanceProfileName:
+    Description:  Name of the Instance Profile for EC2
+    Value: !Ref DynamoDBInstanceProfile
+    Export:
+      Name:  !Sub '${AWS::StackName}-InstanceProfileName'
+
+  Region:
+    Description:  AWS Region
+    Value: !Ref AWS::Region
