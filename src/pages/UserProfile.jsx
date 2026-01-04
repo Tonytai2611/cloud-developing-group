@@ -12,8 +12,20 @@ export default function UserProfile() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/user');
-      if (!res.ok) throw new Error('Not authenticated or profile not found');
+      // Create a timeout promise
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out - Server may be hanging')), 5000)
+      );
+
+      const res = await Promise.race([
+        fetch('/api/user'),
+        timeout
+      ]);
+
+      if (res.status === 404) throw new Error('User profile not found in Database. (Did you complete registration?)');
+      if (res.status === 401) throw new Error('Not authenticated. Please login again.');
+      if (!res.ok) throw new Error(`Server Error: ${res.statusText}`);
+
       const data = await res.json();
       setProfile(data.item);
     } catch (e) {
@@ -54,7 +66,7 @@ export default function UserProfile() {
       if (!res.ok) throw new Error(data.error || 'Delete failed');
       alert(data.message || 'Deleted');
       // clear local auth and go home
-      await fetch('/api/logout', { method: 'POST' }).catch(()=>{});
+      await fetch('/api/logout', { method: 'POST' }).catch(() => { });
       navigate('/');
       window.location.reload();
     } catch (e) {
@@ -85,11 +97,11 @@ export default function UserProfile() {
             </div>
             <div>
               <label className="block text-sm font-medium">Name</label>
-              <input className="w-full border p-2" value={profile.name || ''} onChange={(e)=>setProfile({...profile, name: e.target.value})} />
+              <input className="w-full border p-2" value={profile.name || ''} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium">Email</label>
-              <input className="w-full border p-2" value={profile.email || ''} onChange={(e)=>setProfile({...profile, email: e.target.value})} />
+              <input className="w-full border p-2" value={profile.email || ''} onChange={(e) => setProfile({ ...profile, email: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium">Role</label>
