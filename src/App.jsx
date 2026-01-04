@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Header from './components/application_component/Header';
 import Footer from './components/application_component/Footer';
-import Chatbox from './components/Chatbox/Chatbox';
+import UserChatPage from './pages/UserChatPage';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import Home from './pages/Home';
@@ -47,7 +47,7 @@ function Layout({ children }) {
         {children}
       </div>
       {showHeader && <Footer />}
-      {showChatbox && <Chatbox />}
+      {/* UserChat removed - now using /chat page */}
     </div>
   );
 }
@@ -66,6 +66,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/chat" element={<UserChatPage />} />
 
           {/* Admin routes */}
           <Route path="/admin" element={<Admin />} />

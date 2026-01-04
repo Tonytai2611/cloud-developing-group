@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import {
     Dialog,
@@ -172,6 +173,10 @@ const Header = () => {
                     </Link>
                     <Link to="/contact-us" className="text-white hover:text-yellow-200 transition font-medium">
                         Contact Us
+                    </Link>
+                    <Link to="/chat" className="text-white hover:text-yellow-200 transition font-medium flex items-center gap-2">
+                        <MessageCircle className="w-5 h-5" />
+                        Chat
                     </Link>
                 </div>
 
