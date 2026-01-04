@@ -123,16 +123,27 @@ export const menuApi = {
     // UPLOAD image
     uploadImage: async (file) => {
         try {
-            const formData = new FormData();
-            formData.append('file', file);
+            const reader = new FileReader();
+            const base64Promise = new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
 
-            const response = await fetch(`${API_BASE_URL}/uploadImage`, {
+            const base64Data = await base64Promise;
+
+            const response = await fetch(`${API_BASE_URL}/upload`, {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file: base64Data,
+                    fileName: `${Date.now()}_${file.name}`
+                })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to upload image');
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to upload image');
             }
 
             const result = await response.json();

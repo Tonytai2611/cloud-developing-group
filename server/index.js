@@ -391,4 +391,36 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+// Upload image endpoint
+app.post('/api/upload', async (req, res) => {
+  const { file, fileName } = req.body || {};
+  if (!file || !fileName) {
+    return res.status(400).json({ error: 'Missing file or fileName' });
+  }
+
+  try {
+    const lambda = new AWS.Lambda();
+    const payload = {
+      body: JSON.stringify({ file, fileName })
+    };
+
+    const result = await lambda.invoke({
+      FunctionName: 'UploadImageHandler',
+      InvocationType: 'RequestResponse',
+      Payload: JSON.stringify(payload)
+    }).promise();
+
+    const response = JSON.parse(result.Payload);
+
+    if (response.statusCode === 200) {
+      return res.json(JSON.parse(response.body));
+    } else {
+      return res.status(response.statusCode).json(JSON.parse(response.body));
+    }
+  } catch (error) {
+    console.error('Upload API error:', error);
+    return res.status(500).json({ error: 'Failed to upload image', detail: error.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`✅ Express Server is running on http://localhost:${PORT}`));
