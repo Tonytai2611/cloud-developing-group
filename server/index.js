@@ -96,9 +96,12 @@ app.post('/api/confirm', async (req, res) => {
       return res.status(500).json({ error: 'Server misconfiguration: USERS_TABLE missing' });
     }
 
+    // Normalize username to lowercase for consistent DynamoDB storage
+    const normalizedUsername = username.toLowerCase();
+
     const userItem = {
-      id: username,
-      username,
+      id: normalizedUsername,
+      username: normalizedUsername,
       email: email || 'No Email',
       name: name || 'No Name',
       role: role || 'customer', // Use role from client or default to 'customer'
@@ -114,10 +117,10 @@ app.post('/api/confirm', async (req, res) => {
         try {
           await cognito.adminAddUserToGroup({
             UserPoolId: process.env.COGNITO_USER_POOL_ID,
-            Username: username,
+            Username: normalizedUsername,
             GroupName: 'admin'
           }).promise();
-          console.log(`User ${username} added to 'admin' group in Cognito`);
+          console.log(`User ${normalizedUsername} added to 'admin' group in Cognito`);
         } catch (groupErr) {
           console.warn('Failed to add user to admin group:', groupErr.message || groupErr);
           // Don't fail the entire request if group assignment fails
@@ -255,8 +258,15 @@ app.get('/api/user', async (req, res) => {
   if (!USERS_TABLE) return res.status(500).json({ error: 'Server misconfiguration: USERS_TABLE missing' });
 
   try {
-    const result = await dynamodb.get({ TableName: USERS_TABLE, Key: { id: userInfo.username } }).promise();
-    if (!result.Item) return res.status(404).json({ error: 'User not found' });
+    const normalizedUsername = userInfo.username.toLowerCase();
+    console.log('[DEBUG] GET /api/user - Querying DynamoDB for username:', normalizedUsername);
+    console.log('[DEBUG] Table name:', USERS_TABLE);
+    const result = await dynamodb.get({ TableName: USERS_TABLE, Key: { id: normalizedUsername } }).promise();
+    console.log('[DEBUG] DynamoDB result:', JSON.stringify(result, null, 2));
+    if (!result.Item) {
+      console.log('[DEBUG] User not found in DynamoDB. Username queried:', userInfo.username);
+      return res.status(404).json({ error: 'User not found' });
+    }
     return res.json({ item: result.Item });
   } catch (e) {
     console.error('GET /api/user error:', e);
@@ -292,9 +302,11 @@ app.put('/api/user', async (req, res) => {
   const UpdateExpression = 'SET ' + updateParts.join(', ');
 
   try {
+    // Normalize username to lowercase for consistent lookup
+    const normalizedUsername = userInfo.username.toLowerCase();
     const resp = await dynamodb.update({
       TableName: USERS_TABLE,
-      Key: { id: userInfo.username },
+      Key: { id: normalizedUsername },
       UpdateExpression,
       ExpressionAttributeNames,
       ExpressionAttributeValues,
@@ -315,13 +327,47 @@ app.delete('/api/user', async (req, res) => {
   if (!USERS_TABLE) return res.status(500).json({ error: 'Server misconfiguration: USERS_TABLE missing' });
 
   try {
-    await dynamodb.delete({ TableName: USERS_TABLE, Key: { id: userInfo.username } }).promise();
+    // Normalize username to lowercase for consistent lookup
+    const normalizedUsername = userInfo.username.toLowerCase();
+    await dynamodb.delete({ TableName: USERS_TABLE, Key: { id: normalizedUsername } }).promise();
     // clear cookie
     res.setHeader('Set-Cookie', [serialize('userInfo', '', { path: '/', maxAge: 0 })]);
     return res.json({ message: 'User record deleted (Cognito user not deleted).' });
   } catch (e) {
     console.error('DELETE /api/user error:', e);
     return res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+// Contact Us endpoint - Invoke Lambda to trigger Step Functions
+app.post('/api/contact', async (req, res) => {
+  const { name, email, message } = req.body || {};
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: 'Missing required fields: name, email, or message' });
+  }
+
+  try {
+    const lambda = new AWS.Lambda();
+    const payload = {
+      body: JSON.stringify({ name, email, message })
+    };
+
+    const result = await lambda.invoke({
+      FunctionName: 'ContactHandler', // Your Lambda function name in AWS
+      InvocationType: 'RequestResponse',
+      Payload: JSON.stringify(payload)
+    }).promise();
+
+    const response = JSON.parse(result.Payload);
+
+    if (response.statusCode === 200) {
+      return res.json(JSON.parse(response.body));
+    } else {
+      return res.status(response.statusCode).json(JSON.parse(response.body));
+    }
+  } catch (error) {
+    console.error('Contact API error:', error);
+    return res.status(500).json({ error: 'Failed to send message', detail: error.message });
   }
 });
 

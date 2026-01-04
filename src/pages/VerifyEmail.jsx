@@ -39,7 +39,7 @@ export default function VerifyEmail() {
 
       if (!res.ok) throw new Error(data.error || 'Confirm failed');
       alert('Email verified and account saved. You can now login.');
-      navigate('/login');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Confirmation failed');
     } finally {
