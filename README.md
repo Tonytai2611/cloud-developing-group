@@ -41,7 +41,7 @@ Build output will be placed in the `build/` folder.
 ```bash
 aws cloudformation create-stack \
 --stack-name dynamodb-website-stack \
---template-body file://dynamodb-website-stack.yaml \
+--template-body file://src/components/Dynamo/dynamodb-website-stack.yaml \
 --parameters ParameterKey=EnvironmentName,ParameterValue=dev \
 --capabilities CAPABILITY_NAMED_IAM \
 --region us-east-1
