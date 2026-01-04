@@ -35,6 +35,18 @@ npm run build
 
 Build output will be placed in the `build/` folder.
 
+## Cloud Formation Stack
+- After pushing the content of src/components/Dynamo on an EC2 instance
+- Run
+```bash
+aws cloudformation create-stack \
+--stack-name dynamodb-website-stack \
+--template-body file://dynamodb-website-stack.yaml \
+--parameters ParameterKey=EnvironmentName,ParameterValue=dev \
+--capabilities CAPABILITY_NAMED_IAM \
+--region us-east-1
+```
+- note that a test page is in /src/pages/TestDB.php
 ## Linting & Formatting
 
 This project includes ESLint settings via `react-scripts` and uses Tailwind CSS. Add project-specific linters or formatters if needed.
