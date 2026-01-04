@@ -200,6 +200,26 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Get current user info from cookie
+app.get('/api/me', (req, res) => {
+  try {
+    const cookies = parse(req.headers.cookie || '');
+    const userInfoStr = cookies.userInfo;
+
+    if (!userInfoStr) {
+      // No cookie = not logged in, return null instead of error
+      return res.json({ userInfo: null });
+    }
+
+    const userInfo = JSON.parse(userInfoStr);
+    return res.json({ userInfo });
+  } catch (error) {
+    console.error('Error parsing userInfo cookie:', error);
+    return res.json({ userInfo: null });
+  }
+});
+
+
 // CloudSample: confirmUser (alias of /api/confirm but kept lightweight)
 app.post('/api/confirmUser', async (req, res) => {
   if (!req.body || req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
