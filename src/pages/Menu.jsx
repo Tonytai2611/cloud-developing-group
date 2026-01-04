@@ -182,12 +182,12 @@ export default function Menu() {
                                         {/* Content */}
                                         <div className="p-5">
                                             {/* Title */}
-                                            <h3 className="text-xl font-bold mb-2 text-gray-800 line-clamp-1">
+                                            <h3 className="text-xl font-bold mb-2 text-gray-800">
                                                 {item.name}
                                             </h3>
 
                                             {/* Description */}
-                                            <p className="text-gray-600 text-sm mb-4 line-clamp-2 h-10">
+                                            <p className="text-gray-600 text-sm mb-4">
                                                 {item.description || 'Delicious dish from our menu'}
                                             </p>
 
