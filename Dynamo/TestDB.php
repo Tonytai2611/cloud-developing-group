@@ -1,5 +1,5 @@
 <?php
-require_once '../components/Dynamo/dynamodb-config.php';
+require_once 'dynamodb-config.php';
 
 $db = new DynamoDBWebsite();
 
