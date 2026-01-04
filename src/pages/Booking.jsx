@@ -1,26 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../services/mockApi';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { tableApi } from '../services/tableApi';
+import { bookingApi } from '../services/bookingApi';
 import { Calendar, Clock, Users, MapPin, CheckCircle } from 'lucide-react';
 
 export default function Booking() {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedItems = location.state?.selectedItems || [];
+  const selectedTable = location.state?.selectedTable; // From table selection page
 
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
   const [formData, setFormData] = useState({
     customerName: '',
     phone: '',
     email: '',
     date: '',
     time: '',
-    guests: 2,
-    tableId: '',
+    guests: selectedTable?.seats || 2,
+    tableId: selectedTable?.id || '',
     specialRequests: ''
   });
+
+  // Fetch authenticated user's email from Cognito
+  useEffect(() => {
+    async function fetchUserEmail() {
+      try {
+        const user = await getCurrentUser();
+        const email = user.signInDetails?.loginId || user.attributes?.email || '';
+        setUserEmail(email);
+        setFormData(prev => ({ ...prev, email }));
+      } catch (error) {
+        console.log('User not authenticated:', error);
+      }
+    }
+    fetchUserEmail();
+  }, []);
 
   useEffect(() => {
     fetchAvailableTables();
@@ -28,8 +47,10 @@ export default function Booking() {
 
   const fetchAvailableTables = async () => {
     try {
-      const response = await api.tables.listAvailable();
-      setTables(response.data);
+      const response = await tableApi.list();
+      // Filter only available tables
+      const availableTables = response.data.filter(t => t.status === 'AVAILABLE');
+      setTables(availableTables);
     } catch (err) {
       console.error(err);
     }
@@ -58,7 +79,7 @@ export default function Booking() {
         guests: parseInt(formData.guests)
       };
 
-      const response = await api.bookings.create(bookingData);
+      const response = await bookingApi.create(bookingData);
       setSuccess(true);
 
       // Scroll to top to show success message
@@ -159,9 +180,11 @@ export default function Booking() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    disabled={!!userEmail}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="example@email.com"
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${userEmail ? 'bg-gray-100 cursor-not-allowed' : ''
+                      }`}
+                    placeholder={userEmail ? 'Email from your account' : 'example@email.com'}
                   />
                 </div>
               </div>
@@ -290,8 +313,8 @@ export default function Booking() {
               type="submit"
               disabled={loading || tables.length === 0}
               className={`w-full py-4 rounded-lg font-bold text-lg transition-all shadow-lg ${loading || tables.length === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-teal-500 text-white hover:bg-teal-600'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-teal-500 text-white hover:bg-teal-600'
                 }`}
             >
               {loading ? (

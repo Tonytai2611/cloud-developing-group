@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/mockApi';
+import { menuApi } from '../services/menuApi';
 import { ShoppingCart, Search } from 'lucide-react';
 
 export default function Menu() {
@@ -19,7 +19,7 @@ export default function Menu() {
     const fetchMenu = async () => {
         setLoading(true);
         try {
-            const response = await api.menu.list();
+            const response = await menuApi.list();
             setMenuCategories(response.data || []);
         } catch (err) {
             setError(err.message);
