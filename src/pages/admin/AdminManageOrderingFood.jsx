@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { tableApi } from '../../services/tableApi';
 import { bookingApi } from '../../services/bookingApi';
 import { CheckCircle, XCircle, Clock, DollarSign, Filter, ArrowLeft, Home } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminManageOrderingFood() {
   const navigate = useNavigate();
@@ -24,7 +25,9 @@ export default function AdminManageOrderingFood() {
       const tablesRes = await tableApi.list();
       setTables(tablesRes.data || []);
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error("Failed to load data", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -37,10 +40,12 @@ export default function AdminManageOrderingFood() {
     try {
       const response = await bookingApi.updateStatus(bookingId, 'CONFIRMED');
       setBookings(bookings.map(b => b.id === bookingId ? response.data : b));
-      alert('Booking confirmed!');
+      toast.success("Booking confirmed successfully");
       fetchData(); // Refresh data
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error("Failed to confirm booking", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -53,10 +58,12 @@ export default function AdminManageOrderingFood() {
     try {
       await bookingApi.updateStatus(bookingId, 'REJECTED');
       setBookings(bookings.filter(b => b.id !== bookingId));
-      alert('Booking rejected');
+      toast.success("Booking rejected");
       fetchData(); // Refresh to update table status
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error("Failed to reject booking", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -69,9 +76,11 @@ export default function AdminManageOrderingFood() {
     try {
       await bookingApi.delete(bookingId);
       setBookings(bookings.filter(b => b.id !== bookingId));
-      alert('Deleted successfully!');
+      toast.success("Booking deleted successfully");
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error("Failed to delete booking", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }

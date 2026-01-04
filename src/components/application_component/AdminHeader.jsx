@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from 'sonner';
 
 function AdminHeader() {
     const navigate = useNavigate();
@@ -11,7 +12,7 @@ function AdminHeader() {
             });
 
             if (response.ok) {
-                alert("Logout successful!");
+                toast.success("Logged out successfully");
                 navigate("/");
                 window.location.reload(); // Reload to clear user state
             } else {
@@ -19,7 +20,9 @@ function AdminHeader() {
             }
         } catch (err) {
             console.error("Logout error:", err);
-            alert(err.message || "An error occurred during logout.");
+            toast.error("Logout failed", {
+                description: err.message || "An error occurred"
+            });
         }
     };
 

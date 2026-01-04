@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tableApi } from '../../services/tableApi';
 import { Plus, Edit2, Trash2, Users, ArrowLeft, Home } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminManageTable() {
   const navigate = useNavigate();
@@ -25,7 +26,9 @@ export default function AdminManageTable() {
       const response = await tableApi.list();
       setTables(response.data);
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error("Failed to load tables", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -63,15 +66,17 @@ export default function AdminManageTable() {
       if (editingTable) {
         const response = await tableApi.update(editingTable.id, data);
         setTables(tables.map(t => t.id === editingTable.id ? response.data : t));
-        alert('Updated successfully!');
+        toast.success("Table updated successfully");
       } else {
         const response = await tableApi.create(data);
         setTables([...tables, response.data]);
-        alert('Table added successfully!');
+        toast.success("Table added successfully");
       }
       setShowModal(false);
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error("Failed to save table", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }
@@ -84,9 +89,11 @@ export default function AdminManageTable() {
     try {
       await tableApi.delete(id);
       setTables(tables.filter(t => t.id !== id));
-      alert('Deleted successfully!');
+      toast.success("Table deleted successfully");
     } catch (err) {
-      alert(err.message); // Will show "Cannot delete table that is currently occupied!"
+      toast.error("Failed to delete table", {
+        description: err.message
+      });
     } finally {
       setLoading(false);
     }

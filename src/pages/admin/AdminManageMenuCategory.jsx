@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { menuApi } from '../../services/menuApi';
 import { Plus, Edit2, Trash2, Search, ArrowLeft, Home } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminManageMenu() {
     const navigate = useNavigate();
@@ -19,7 +20,9 @@ export default function AdminManageMenu() {
             const response = await menuApi.list();
             setMenuCategories(response.data || []);
         } catch (err) {
-            alert('Error: ' + err.message);
+            toast.error("Failed to load menu", {
+                description: err.message
+            });
         } finally {
             setLoading(false);
         }
@@ -32,9 +35,11 @@ export default function AdminManageMenu() {
         try {
             await menuApi.delete(id);
             setMenuCategories(menuCategories.filter(cat => cat.id !== id));
-            alert('Deleted successfully!');
+            toast.success("Category deleted successfully");
         } catch (err) {
-            alert('Error: ' + err.message);
+            toast.error("Failed to delete category", {
+                description: err.message
+            });
         } finally {
             setLoading(false);
         }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { menuApi } from '../../services/menuApi';
 import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminMenuForm() {
     const navigate = useNavigate();
@@ -27,7 +28,9 @@ export default function AdminMenuForm() {
 
         // Validate file type
         if (!file.type.startsWith('image/')) {
-            alert('Please select an image file');
+            toast.error("Invalid file type", {
+                description: "Please select an image file"
+            });
             return;
         }
 
@@ -44,7 +47,9 @@ export default function AdminMenuForm() {
             console.log('✅ Image uploaded:', result.url);
         } catch (error) {
             console.error('❌ Upload error:', error);
-            alert('Failed to upload image: ' + error.message);
+            toast.error("Failed to upload image", {
+                description: error.message
+            });
         } finally {
             setIsUploading(false);
         }
@@ -68,7 +73,9 @@ export default function AdminMenuForm() {
                 setIsEditMode(true);
             }
         } catch (error) {
-            alert('Error fetching menu data: ' + error.message);
+            toast.error("Failed to load menu", {
+                description: error.message
+            });
         } finally {
             setLoading(false);
         }
@@ -84,7 +91,9 @@ export default function AdminMenuForm() {
         if (dishes.length < 6) {
             setDishes([...dishes, { name: '', description: '', price: '', image: '' }]);
         } else {
-            alert('Cannot add more than 6 dishes per category');
+            toast.warning("Maximum dishes reached", {
+                description: "Cannot add more than 6 dishes per category"
+            });
         }
     };
 
@@ -94,7 +103,9 @@ export default function AdminMenuForm() {
             newDishes.splice(index, 1);
             setDishes(newDishes);
         } else {
-            alert('At least one dish is required');
+            toast.warning("Cannot delete", {
+                description: "At least one dish is required"
+            });
         }
     };
 
@@ -103,13 +114,17 @@ export default function AdminMenuForm() {
 
         // Validation
         if (!formData.id || !formData.title) {
-            alert('Please fill in Menu ID and Title');
+            toast.error("Missing required fields", {
+                description: "Please fill in Menu ID and Title"
+            });
             return;
         }
 
         const validDishes = dishes.filter(d => d.name && d.price);
         if (validDishes.length === 0) {
-            alert('Please add at least one dish with name and price');
+            toast.error("No valid dishes", {
+                description: "Please add at least one dish with name and price"
+            });
             return;
         }
 
@@ -127,11 +142,11 @@ export default function AdminMenuForm() {
             if (isEditMode) {
                 const result = await menuApi.update(formData.id, requestData);
                 console.log('✅ Update result:', result);
-                alert('Menu updated successfully!');
+                toast.success("Menu updated successfully!");
             } else {
                 const result = await menuApi.create(requestData);
                 console.log('✅ Create result:', result);
-                alert('Menu created successfully!');
+                toast.success("Menu created successfully!");
             }
 
             navigate('/admin/manage-menu');

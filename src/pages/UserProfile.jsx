@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function UserProfile() {
   const [profile, setProfile] = useState(null);
@@ -50,7 +51,7 @@ export default function UserProfile() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
       setProfile(data.item);
-      alert('Profile saved');
+      toast.success("Profile saved successfully");
     } catch (e) {
       setError(e.message || 'Save failed');
     } finally {
@@ -64,7 +65,7 @@ export default function UserProfile() {
       const res = await fetch('/api/user', { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
-      alert(data.message || 'Deleted');
+      toast.success(data.message || 'Account deleted successfully');
       // clear local auth and go home
       await fetch('/api/logout', { method: 'POST' }).catch(() => { });
       navigate('/');

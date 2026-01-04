@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +21,9 @@ export default function Signup() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Register failed');
       // If Cognito sends a confirmation code, you may prompt user to confirm
-      alert('Registered successfully. Please check your email for verification code.');
+      toast.success("Registration successful!", {
+        description: "Please check your email for verification code"
+      });
       navigate(`/verify-email?username=${encodeURIComponent(email)}`);
       setStep(1);
     } catch (err) {
@@ -33,7 +36,9 @@ export default function Signup() {
     setError(null);
     try {
       // Call Cognito confirm via AWS SDK on server if implemented; fallback instruct user
-      alert('If confirmation is required, verify via email code in Cognito.');
+      toast.info("Please verify via email code", {
+        description: "Check your email for the verification code"
+      });
       window.location.reload();
     } catch (err) {
       setError(err.message || 'Confirmation failed');

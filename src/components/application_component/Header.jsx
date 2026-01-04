@@ -12,6 +12,7 @@ import {
 } from "../ui/dialog";
 import AWS from 'aws-sdk';
 import CryptoJS from 'crypto-js';
+import { toast } from 'sonner';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -68,7 +69,9 @@ const Header = () => {
             }
 
             const result = await response.json();
-            alert("Login successful!");
+            toast.success("Welcome back!", {
+                description: result.isAdmin ? "Redirecting to admin panel..." : "Login successful"
+            });
             fetchUserInfo();
             if (result.isAdmin) {
                 navigate("/admin");
@@ -77,7 +80,9 @@ const Header = () => {
             }
         } catch (err) {
             console.error("Login failure:", err);
-            alert(err.message || "An error occurred during login.");
+            toast.error("Login failed", {
+                description: err.message || "Invalid credentials"
+            });
         }
     };
 
@@ -113,7 +118,9 @@ const Header = () => {
         try {
             const data = await cognito.signUp(params).promise();
             console.log("Sign-up successful:", data);
-            alert("User registered successfully!");
+            toast.success("Registration successful!", {
+                description: "Please check your email for verification code"
+            });
 
             // persist registration info so verify page can include email/name/role
             localStorage.setItem('username', username);
@@ -123,7 +130,9 @@ const Header = () => {
             navigate('/verify-email');
         } catch (err) {
             console.error("Error during sign-up:", err);
-            alert(err.message || "Error during sign-up");
+            toast.error("Registration failed", {
+                description: err.message || "Error during sign-up"
+            });
         }
     };
 
@@ -136,14 +145,16 @@ const Header = () => {
 
             if (response.ok) {
                 setUser(null);
-                alert("Logout successful!");
+                toast.success("Logged out successfully");
                 navigate("/");
             } else {
                 throw new Error("Failed to log out");
             }
         } catch (err) {
             console.error("Logout error:", err);
-            alert(err.message || "An error occurred during logout.");
+            toast.error("Logout failed", {
+                description: err.message || "An error occurred"
+            });
         }
     };
 
@@ -174,10 +185,12 @@ const Header = () => {
                     <Link to="/contact-us" className="text-white hover:text-yellow-200 transition font-medium">
                         Contact Us
                     </Link>
-                    <Link to="/chat" className="text-white hover:text-yellow-200 transition font-medium flex items-center gap-2">
-                        <MessageCircle className="w-5 h-5" />
-                        Chat
-                    </Link>
+                    {user && (
+                        <Link to="/chat" className="text-white hover:text-yellow-200 transition font-medium flex items-center gap-2">
+                            <MessageCircle className="w-5 h-5" />
+                            Chat
+                        </Link>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -197,7 +210,7 @@ const Header = () => {
                     ) : (
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button className="bg-white text-teal-600 hover:bg-yellow-200 transition px-4 py-2 rounded-lg font-medium shadow-sm">
+                                <Button className="bg-[#F59E0B] text-white hover:bg-[#D97706] transition px-6 py-2 rounded-lg font-medium shadow-sm">
                                     Login
                                 </Button>
                             </DialogTrigger>

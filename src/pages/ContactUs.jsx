@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({
@@ -7,8 +8,6 @@ export default function ContactUs() {
     message: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -16,16 +15,11 @@ export default function ContactUs() {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
-    if (error) setError(null);
-    if (success) setSuccess(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(false);
 
     try {
 
@@ -44,7 +38,9 @@ export default function ContactUs() {
         throw new Error(data.message || data.error || 'Failed to send message');
       }
 
-      setSuccess(true);
+      toast.success("Message sent successfully!", {
+        description: "We'll get back to you soon"
+      });
       // Clear form
       setFormData({
         name: '',
@@ -52,7 +48,9 @@ export default function ContactUs() {
         message: ''
       });
     } catch (err) {
-      setError(err.message || 'An error occurred. Please try again.');
+      toast.error("Failed to send message", {
+        description: err.message || 'An error occurred. Please try again.'
+      });
     } finally {
       setLoading(false);
     }
@@ -63,16 +61,6 @@ export default function ContactUs() {
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold text-center mb-8">Contact Us</h1>
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
-          {success && (
-            <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-              ✅ Message sent successfully! We'll get back to you soon.
-            </div>
-          )}
-          {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-              ❌ {error}
-            </div>
-          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-2">

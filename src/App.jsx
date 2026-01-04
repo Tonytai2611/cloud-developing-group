@@ -17,6 +17,8 @@ import AdminManageMenu from './pages/admin/AdminManageMenuCategory';
 import AdminManageTable from './pages/admin/AdminManageTable';
 import AdminManageOrderingFood from './pages/admin/AdminManageOrderingFood';
 import AdminChatWithUsers from './pages/admin/AdminChatWithUsers';
+import AdminMenuCategoryForm from './pages/admin/AdminMenuCategoryForm';
+import { Toaster } from 'sonner';
 import './App.css';
 
 // Layout component để xử lý conditional header/footer
@@ -42,6 +44,7 @@ function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-100 text-black">
+      <Toaster position="top-right" richColors closeButton />
       {showHeader && <Header />}
       <div className={paddingTopClass}>
         {children}
@@ -71,6 +74,7 @@ function App() {
           {/* Admin routes */}
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/manage-menu" element={<AdminManageMenu />} />
+          <Route path="/admin/manage-menu/form" element={<AdminMenuCategoryForm />} />
           <Route path="/admin/manage-table" element={<AdminManageTable />} />
           <Route path="/admin/manage-ordering-food" element={<AdminManageOrderingFood />} />
           <Route path="/admin/chat-with-users" element={<AdminChatWithUsers />} />

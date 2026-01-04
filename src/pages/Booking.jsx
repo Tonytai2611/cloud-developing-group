@@ -4,6 +4,7 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import { tableApi } from '../services/tableApi';
 import { bookingApi } from '../services/bookingApi';
 import { Calendar, Clock, Users, MapPin, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Booking() {
   const location = useLocation();
@@ -85,7 +86,9 @@ export default function Booking() {
       // Scroll to top to show success message
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      alert(err.message);
+      toast.error("Booking failed", {
+        description: err.message || "An error occurred"
+      });
     } finally {
       setLoading(false);
     }

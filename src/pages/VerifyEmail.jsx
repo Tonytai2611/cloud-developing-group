@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -38,7 +39,9 @@ export default function VerifyEmail() {
       }
 
       if (!res.ok) throw new Error(data.error || 'Confirm failed');
-      alert('Email verified and account saved. You can now login.');
+      toast.success("Email verified successfully!", {
+        description: "You can now login to your account"
+      });
       navigate('/');
     } catch (err) {
       setError(err.message || 'Confirmation failed');
