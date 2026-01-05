@@ -309,71 +309,9 @@ Resources:
         - Key: Environment
           Value: !Ref EnvironmentName
 
-  # ==================== IAM ROLE FOR EC2/LAMBDA ====================
-
-  # IAM Role for EC2 instances or Lambda to access DynamoDB
-  DynamoDBAccessRole:
-    Type: AWS::IAM::Role
-    Properties: 
-      RoleName: !Sub 'DynamoDB-WebAccess-${EnvironmentName}'
-      AssumeRolePolicyDocument:
-        Version:  '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: 
-                - ec2.amazonaws.com
-                - lambda.amazonaws.com
-            Action:  sts:AssumeRole
-      Policies:
-        - PolicyName: DynamoDBAccessPolicy
-          PolicyDocument:
-            Version:  '2012-10-17'
-            Statement:
-              # Read/Write access to all tables
-              - Effect:  Allow
-                Action: 
-                  - dynamodb:GetItem
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                  - dynamodb:Scan
-                  - dynamodb:BatchGetItem
-                  - dynamodb:BatchWriteItem
-                Resource: 
-                  - !GetAtt VisitorsTable.Arn
-                  - !Sub '${VisitorsTable.Arn}/index/*'
-                  - !GetAtt ContentTable.Arn
-                  - !Sub '${ContentTable.Arn}/index/*'
-                  - !GetAtt SessionsTable.Arn
-                  - !Sub '${SessionsTable.Arn}/index/*'
-                  - !GetAtt MenuTable.Arn
-                  - !Sub '${MenuTable.Arn}/index/*'
-                  - !GetAtt BookingsTable.Arn
-                  - !Sub '${BookingsTable.Arn}/index/*'
-                  - !GetAtt TablesTable.Arn
-                  - !Sub '${TablesTable.Arn}/index/*'
-                  - !GetAtt OrdersTable.Arn
-                  - !Sub '${OrdersTable.Arn}/index/*'
-              # Allow DescribeTable for health checks
-              - Effect: Allow
-                Action:
-                  - dynamodb:DescribeTable
-                Resource: '*'
-      Tags:
-        - Key: Name
-          Value: !Sub 'DynamoDB-WebAccess-${EnvironmentName}'
-        - Key: Environment
-          Value: !Ref EnvironmentName
-
-  # Instance Profile for EC2
-  DynamoDBInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties: 
-      InstanceProfileName: !Sub 'DynamoDB-WebAccess-Profile-${EnvironmentName}'
-      Roles:
-        - !Ref DynamoDBAccessRole
+  # AWS Learner Lab does not allow custom IAM role creation
+  # Use LabRole: arn:aws:iam::<account-id>:role/LabRole
+  # Use LabInstanceProfile: arn:aws:iam::<account-id>:instance-profile/LabInstanceProfile
 
   # ==================== SSM PARAMETERS ====================
 
@@ -530,21 +468,14 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-SessionsTableArn'
 
-  DynamoDBAccessRoleArn: 
-    Description: ARN of the IAM role for DynamoDB access
-    Value: !GetAtt DynamoDBAccessRole.Arn
-    Export: 
-      Name: !Sub '${AWS::StackName}-DynamoDBAccessRoleArn'
-
-  InstanceProfileName:
-    Description:  Name of the Instance Profile for EC2
-    Value: !Ref DynamoDBInstanceProfile
-    Export:
-      Name:  !Sub '${AWS::StackName}-InstanceProfileName'
-
   Region:
     Description:  AWS Region
     Value: !Ref AWS::Region
+    
+  LabRoleInfo:
+    Description: Use LabRole for Lambda and EC2
+    Value: "Get ARN with: aws iam get-role --role-name LabRole --query 'Role.Arn'"
+
   MenuTableName:
     Description: Name of the Menu DynamoDB table
     Value: !Ref MenuTable

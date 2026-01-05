@@ -36,16 +36,21 @@ npm run build
 Build output will be placed in the `build/` folder.
 
 ## Cloud Formation Stack
-- After pushing the content of /Dynamo on an EC2 instance
-- Run
+## CloudFormation Stack
+
+Deploy the DynamoDB infrastructure:
+
 ```bash
+cd Dynamo/cloudformation
+
 aws cloudformation create-stack \
---stack-name dynamodb-website-stack \
---template-body file://Dynamo/dynamodb-website-stack.yaml \
---parameters ParameterKey=EnvironmentName,ParameterValue=dev \
---capabilities CAPABILITY_NAMED_IAM \
---region us-east-1
+  --stack-name restaurant-dynamodb-dev \
+  --template-body file://dynamo-website-stack.yaml \
+  --parameters ParameterKey=EnvironmentName,ParameterValue=dev \
+  --region us-east-1
 ```
+
+See [Dynamo/README.md](Dynamo/README.md) for complete infrastructure documentation and [Dynamo/docs/DEPLOYMENT-GUIDE.md](Dynamo/docs/DEPLOYMENT-GUIDE.md) for detailed deployment instructions.
 
 ## Linting & Formatting
 
