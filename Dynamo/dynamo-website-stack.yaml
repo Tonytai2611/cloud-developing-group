@@ -161,11 +161,159 @@ Resources:
         - Key: Environment
           Value: !Ref EnvironmentName
 
+  # Table for restaurant menu items
+  MenuTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}-Menu-${EnvironmentName}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: menuItemId
+          AttributeType: S
+        - AttributeName: category
+          AttributeType: S
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: menuItemId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CategoryIndex
+          KeySchema:
+            - AttributeName: category
+              KeyType: HASH
+            - AttributeName: name
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${TableName}-Menu-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Table for restaurant table bookings
+  BookingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}-Bookings-${EnvironmentName}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: bookingId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: bookingDate
+          AttributeType: S
+        - AttributeName: tableNumber
+          AttributeType: N
+      KeySchema:
+        - AttributeName: bookingId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserBookingsIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: bookingDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: DateTableIndex
+          KeySchema:
+            - AttributeName: bookingDate
+              KeyType: HASH
+            - AttributeName: tableNumber
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${TableName}-Bookings-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Table for restaurant tables management
+  TablesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}-Tables-${EnvironmentName}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: tableId
+          AttributeType: S
+        - AttributeName: capacity
+          AttributeType: N
+      KeySchema:
+        - AttributeName: tableId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CapacityIndex
+          KeySchema:
+            - AttributeName: capacity
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${TableName}-Tables-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Table for food orders
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}-Orders-${EnvironmentName}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: orderDate
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserOrdersIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: orderDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StatusIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: orderDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${TableName}-Orders-${EnvironmentName}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
   # ==================== IAM ROLE FOR EC2/LAMBDA ====================
 
   # IAM Role for EC2 instances or Lambda to access DynamoDB
   DynamoDBAccessRole:
-    Type:  AWS::IAM:: Role
+    Type: AWS::IAM::Role
     Properties: 
       RoleName: !Sub 'DynamoDB-WebAccess-${EnvironmentName}'
       AssumeRolePolicyDocument:
@@ -190,7 +338,7 @@ Resources:
                   - dynamodb:UpdateItem
                   - dynamodb:DeleteItem
                   - dynamodb:Query
-                  - dynamodb: Scan
+                  - dynamodb:Scan
                   - dynamodb:BatchGetItem
                   - dynamodb:BatchWriteItem
                 Resource: 
@@ -200,6 +348,14 @@ Resources:
                   - !Sub '${ContentTable.Arn}/index/*'
                   - !GetAtt SessionsTable.Arn
                   - !Sub '${SessionsTable.Arn}/index/*'
+                  - !GetAtt MenuTable.Arn
+                  - !Sub '${MenuTable.Arn}/index/*'
+                  - !GetAtt BookingsTable.Arn
+                  - !Sub '${BookingsTable.Arn}/index/*'
+                  - !GetAtt TablesTable.Arn
+                  - !Sub '${TablesTable.Arn}/index/*'
+                  - !GetAtt OrdersTable.Arn
+                  - !Sub '${OrdersTable.Arn}/index/*'
               # Allow DescribeTable for health checks
               - Effect: Allow
                 Action:
@@ -231,7 +387,7 @@ Resources:
       Description: DynamoDB Visitors table name
 
   ContentTableNameParameter:
-    Type:  AWS::SSM:: Parameter
+    Type: AWS::SSM::Parameter
     Properties: 
       Name: !Sub '/website/${EnvironmentName}/dynamodb/content-table'
       Type:  String
@@ -250,9 +406,41 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Sub '/website/${EnvironmentName}/dynamodb/region'
-      Type:  String
-      Value:  !Ref AWS::Region
-      Description:  AWS Region for DynamoDB
+      Type: String
+      Value: !Ref AWS::Region
+      Description: AWS Region for DynamoDB
+
+  MenuTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/website/${EnvironmentName}/dynamodb/menu-table'
+      Type: String
+      Value: !Ref MenuTable
+      Description: DynamoDB Menu table name
+
+  BookingsTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/website/${EnvironmentName}/dynamodb/bookings-table'
+      Type: String
+      Value: !Ref BookingsTable
+      Description: DynamoDB Bookings table name
+
+  TablesTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/website/${EnvironmentName}/dynamodb/tables-table'
+      Type: String
+      Value: !Ref TablesTable
+      Description: DynamoDB Tables management table name
+
+  OrdersTableNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/website/${EnvironmentName}/dynamodb/orders-table'
+      Type: String
+      Value: !Ref OrdersTable
+      Description: DynamoDB Orders table name
 
   # ==================== AUTO SCALING (Optional) ====================
 
@@ -357,3 +545,50 @@ Outputs:
   Region:
     Description:  AWS Region
     Value: !Ref AWS::Region
+  MenuTableName:
+    Description: Name of the Menu DynamoDB table
+    Value: !Ref MenuTable
+    Export:
+      Name: !Sub '${AWS::StackName}-MenuTableName'
+
+  MenuTableArn:
+    Description: ARN of the Menu DynamoDB table
+    Value: !GetAtt MenuTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-MenuTableArn'
+
+  BookingsTableName:
+    Description: Name of the Bookings DynamoDB table
+    Value: !Ref BookingsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-BookingsTableName'
+
+  BookingsTableArn:
+    Description: ARN of the Bookings DynamoDB table
+    Value: !GetAtt BookingsTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BookingsTableArn'
+
+  TablesTableName:
+    Description: Name of the Tables management DynamoDB table
+    Value: !Ref TablesTable
+    Export:
+      Name: !Sub '${AWS::StackName}-TablesTableName'
+
+  TablesTableArn:
+    Description: ARN of the Tables management DynamoDB table
+    Value: !GetAtt TablesTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-TablesTableArn'
+
+  OrdersTableName:
+    Description: Name of the Orders DynamoDB table
+    Value: !Ref OrdersTable
+    Export:
+      Name: !Sub '${AWS::StackName}-OrdersTableName'
+
+  OrdersTableArn:
+    Description: ARN of the Orders DynamoDB table
+    Value: !GetAtt OrdersTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-OrdersTableArn'
