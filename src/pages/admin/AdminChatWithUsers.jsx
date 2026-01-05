@@ -224,8 +224,29 @@ const AdminChatWithUsers = () => {
         <Notification message={notification} onClose={() => setNotification(null)} />
       )}
 
+      {/* Navigation */}
+      <div className="max-w-7xl w-full mx-auto px-6 pt-6 pb-2">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/admin')}
+            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back to Dashboard
+          </button>
+          <span className="text-gray-400">|</span>
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors"
+          >
+            <Home className="w-5 h-5" />
+            Home
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-6">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-6 pt-2">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden h-[calc(100vh-140px)] flex">
 
           {/* Sidebar - Users List */}
