@@ -225,7 +225,7 @@ Resources:
         InstanceType: !Ref InstanceType
         KeyName: !Ref KeyPairName
         IamInstanceProfile:
-          Name: LabInstanceProfile
+          Name: LabUserProfile
         SecurityGroupIds:
           - !Ref EC2SecurityGroup
         UserData:

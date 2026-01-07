@@ -1,22 +1,23 @@
 # BrewCraft Infrastructure - Deployment Guide
 
+## AWS Learner Lab Configuration ✅
+
+Your stack is pre-configured for AWS Learner Lab:
+- **Hosted Zone ID**: Z05960073426N6KBSQBUN
+- **Key Pair**: vockey (Learner Lab default)
+- **IAM Profile**: LabUserProfile
+- **Region**: us-east-1
+
+Ready to deploy without additional configuration!
+
 ## Prerequisites
 
-### 1. Get Route53 Hosted Zone ID
+### AWS Learner Lab Session
+Ensure your Learner Lab session is active:
 ```bash
-aws route53 list-hosted-zones --query "HostedZones[?Name=='brewcraft.rocks.'].Id" --output text
+# Test AWS credentials
+aws sts get-caller-identity
 ```
-
-### 2. Create EC2 Key Pair (if not exists)
-```bash
-aws ec2 create-key-pair --key-name brewcraft-keypair --query 'KeyMaterial' --output text > brewcraft-keypair.pem
-chmod 400 brewcraft-keypair.pem
-```
-
-### 3. Update Parameters File
-Edit `parameters.yaml`:
-- Replace `HostedZoneId` with your actual Hosted Zone ID
-- Replace `KeyPairName` with your key pair name (if different)
 
 ## Deployment
 
@@ -120,8 +121,10 @@ aws elbv2 describe-target-health \
 ### EC2 Instances Not Healthy
 1. SSH into instance:
 ```bash
-ssh -i brewcraft-keypair.pem ec2-user@<INSTANCE-PUBLIC-IP>
+ssh -i vockey.pem ec2-user@<INSTANCE-PUBLIC-IP>
 ```
+
+Note: Download vockey.pem from AWS Learner Lab before first use
 
 2. Check application status:
 ```bash

@@ -1,7 +1,7 @@
 EnvironmentName: dev
 DomainName: brewcraft.rocks
-HostedZoneId: Z0123456789ABCDEFGHIJ  # Replace with your actual Route53 Hosted Zone ID
-KeyPairName: brewcraft-keypair  # Replace with your actual EC2 Key Pair name
+HostedZoneId: Z05960073426N6KBSQBUN
+KeyPairName: vockey
 InstanceType: t2.micro
 MinSize: 2
 MaxSize: 4

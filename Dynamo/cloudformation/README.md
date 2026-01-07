@@ -18,20 +18,13 @@
 
 ## Before Deployment
 
-### 1. Get Your Route53 Hosted Zone ID
-```bash
-aws route53 list-hosted-zones --query "HostedZones[?Name=='brewcraft.rocks.'].Id" --output text
-```
+### Configuration Ready ✅
+All parameters are configured for AWS Learner Lab:
+- Route53 Hosted Zone ID: Z05960073426N6KBSQBUN
+- EC2 Key Pair: vockey (AWS Learner Lab default)
+- IAM Profile: LabUserProfile (AWS Learner Lab restriction)
 
-### 2. Create EC2 Key Pair
-```bash
-aws ec2 create-key-pair --key-name brewcraft-keypair --query 'KeyMaterial' --output text > brewcraft-keypair.pem
-```
-
-### 3. Edit parameters.yaml
-Replace these values:
-- `HostedZoneId`: Your actual Route53 Hosted Zone ID
-- `KeyPairName`: Your EC2 key pair name
+No additional configuration needed - ready to deploy!
 
 ## Deploy
 
