@@ -27,7 +27,7 @@ const IntroductionComponent = () => {
 
         <div className="lg:w-1/2 flex justify-center lg:justify-end">
           <div className="w-[420px] bg-gradient-to-b from-white to-[#FBF8F3] rounded-2xl p-6 shadow-lg border">
-            <img src={'/cafe-hero.jpg'} alt={'Cafe'} className="w-full h-64 object-cover rounded-lg mb-4" />
+            <img src={'/cafe.jpg'} alt={'Cafe'} className="w-full h-64 object-cover rounded-lg mb-4" />
             <div className="p-3 bg-[#0F4C4C] text-white rounded-lg">
               <h4 className="font-semibold">Seasonal Special</h4>
               <p className="text-sm text-white/90">Ethiopian pour-over — floral, bright, balanced.</p>

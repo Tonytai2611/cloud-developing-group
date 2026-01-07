@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import {
     Dialog,
@@ -11,6 +12,7 @@ import {
 } from "../ui/dialog";
 import AWS from 'aws-sdk';
 import CryptoJS from 'crypto-js';
+import { toast } from 'sonner';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -19,6 +21,7 @@ const Header = () => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [role, setRole] = useState('customer'); // Default role
     const [user, setUser] = useState(null);
 
     // Generate SECRET_HASH for Cognito using crypto-js
@@ -66,7 +69,9 @@ const Header = () => {
             }
 
             const result = await response.json();
-            alert("Login successful!");
+            toast.success("Welcome back!", {
+                description: result.isAdmin ? "Redirecting to admin panel..." : "Login successful"
+            });
             fetchUserInfo();
             if (result.isAdmin) {
                 navigate("/admin");
@@ -75,7 +80,9 @@ const Header = () => {
             }
         } catch (err) {
             console.error("Login failure:", err);
-            alert(err.message || "An error occurred during login.");
+            toast.error("Login failed", {
+                description: err.message || "Invalid credentials"
+            });
         }
     };
 
@@ -83,8 +90,8 @@ const Header = () => {
     const onSubmit = async (event) => {
         event.preventDefault();
 
-        const clientId = "2gjpon357ujm2enjd9qcngn5lm";
-        const clientSecret = "gfh21gs4f62rshdeq2obnlqd0hagou9gapo9527jkfdn8r6fne9";
+        const clientId = "10g093m0qo9fj9hsar5ngtp8ej";
+        const clientSecret = "1vo0m75h340fhfd828uovmr3nqdeeq3okg559nv85hp2mqvrjvf";
         const region = "us-east-1";
 
         const secretHash = generateSecretHash(username, clientId, clientSecret);
@@ -111,13 +118,21 @@ const Header = () => {
         try {
             const data = await cognito.signUp(params).promise();
             console.log("Sign-up successful:", data);
-            alert("User registered successfully!");
+            toast.success("Registration successful!", {
+                description: "Please check your email for verification code"
+            });
 
+            // persist registration info so verify page can include email/name/role
             localStorage.setItem('username', username);
+            localStorage.setItem('email', email);
+            localStorage.setItem('name', name);
+            localStorage.setItem('role', role); // Save role to localStorage
             navigate('/verify-email');
         } catch (err) {
             console.error("Error during sign-up:", err);
-            alert(err.message || "Error during sign-up");
+            toast.error("Registration failed", {
+                description: err.message || "Error during sign-up"
+            });
         }
     };
 
@@ -130,14 +145,16 @@ const Header = () => {
 
             if (response.ok) {
                 setUser(null);
-                alert("Logout successful!");
+                toast.success("Logged out successfully");
                 navigate("/");
             } else {
                 throw new Error("Failed to log out");
             }
         } catch (err) {
             console.error("Logout error:", err);
-            alert(err.message || "An error occurred during logout.");
+            toast.error("Logout failed", {
+                description: err.message || "An error occurred"
+            });
         }
     };
 
@@ -168,6 +185,12 @@ const Header = () => {
                     <Link to="/contact-us" className="text-white hover:text-yellow-200 transition font-medium">
                         Contact Us
                     </Link>
+                    {user && (
+                        <Link to="/chat" className="text-white hover:text-yellow-200 transition font-medium flex items-center gap-2">
+                            <MessageCircle className="w-5 h-5" />
+                            Chat
+                        </Link>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -187,145 +210,159 @@ const Header = () => {
                     ) : (
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button className="bg-white text-teal-600 hover:bg-yellow-200 transition px-4 py-2 rounded-lg font-medium shadow-sm">
+                                <Button className="bg-[#F59E0B] text-white hover:bg-[#D97706] transition px-6 py-2 rounded-lg font-medium shadow-sm">
                                     Login
                                 </Button>
                             </DialogTrigger>
 
                             <DialogContent className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-                            <DialogHeader>
-                                <DialogTitle>
-                                    {activeTab === "login" ? "Login" : "Register"}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    {activeTab === "login"
-                                        ? "Please enter your credentials to login."
-                                        : "Create a new account by filling out the details below."}
-                                </DialogDescription>
-                            </DialogHeader>
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        {activeTab === "login" ? "Login" : "Register"}
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        {activeTab === "login"
+                                            ? "Please enter your credentials to login."
+                                            : "Create a new account by filling out the details below."}
+                                    </DialogDescription>
+                                </DialogHeader>
 
-                            <div className="flex space-x-4 mb-4">
-                                <button
-                                    className={`px-4 py-2 font-medium transition-all rounded-md ${activeTab === "login" ? "bg-teal-500 text-white" : "bg-gray-200"
-                                        }`}
-                                    onClick={() => setActiveTab("login")}
-                                >
-                                    Login
-                                </button>
-                                <button
-                                    className={`px-4 py-2 font-medium transition-all rounded-md ${activeTab === "register" ? "bg-teal-500 text-white" : "bg-gray-200"
-                                        }`}
-                                    onClick={() => setActiveTab("register")}
-                                >
-                                    Register
-                                </button>
-                            </div>
+                                <div className="flex space-x-4 mb-4">
+                                    <button
+                                        className={`px-4 py-2 font-medium transition-all rounded-md ${activeTab === "login" ? "bg-teal-500 text-white" : "bg-gray-200"
+                                            }`}
+                                        onClick={() => setActiveTab("login")}
+                                    >
+                                        Login
+                                    </button>
+                                    <button
+                                        className={`px-4 py-2 font-medium transition-all rounded-md ${activeTab === "register" ? "bg-teal-500 text-white" : "bg-gray-200"
+                                            }`}
+                                        onClick={() => setActiveTab("register")}
+                                    >
+                                        Register
+                                    </button>
+                                </div>
 
-                            {activeTab === "login" && (
-                                <form className="space-y-4">
-                                    <div>
-                                        <label htmlFor="username" className="block font-medium">
-                                            Username
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="username"
-                                            className="w-full p-2 border rounded-md"
-                                            placeholder="Enter your username"
-                                            onChange={(event) => setUsername(event.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="password" className="block font-medium">
-                                            Password
-                                        </label>
-                                        <input
-                                            type="password"
-                                            id="password"
-                                            className="w-full p-2 border rounded-md"
-                                            placeholder="Enter your password"
-                                            onChange={(event) => setPassword(event.target.value)}
-                                        />
-                                    </div>
-
-                                    <div className="flex justify-end">
-                                        <Button
-                                            onClick={onSubmitLogin}
-                                            className="bg-teal-500 text-white hover:bg-teal-600 transition-all px-4 py-2 rounded-md"
-                                        >
-                                            Login
-                                        </Button>
-                                    </div>
-                                </form>
-                            )}
-                            {activeTab === "register" && (
-                                <form className="space-y-4" onSubmit={onSubmit}>
-                                    <div>
-                                        <label htmlFor="name" className="block font-medium">
-                                            Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="name"
-                                            className="w-full p-2 border rounded-md"
-                                            placeholder="Enter your name"
-                                            onChange={(event) => setName(event.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="email" className="block font-medium">
-                                            Email
-                                        </label>
-                                        <input
-                                            type="email"
-                                            id="email"
-                                            className="w-full p-2 border rounded-md"
-                                            placeholder="Enter your email"
-                                            onChange={(event) => setEmail(event.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="username" className="block font-medium">
-                                            Username
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="username"
-                                            className="w-full p-2 border rounded-md"
-                                            placeholder="Enter your username"
-                                            onChange={(event) => setUsername(event.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label htmlFor="password" className="block font-medium">
-                                            Password
-                                        </label>
-                                        <input
-                                            type="password"
-                                            id="password"
-                                            className="w-full p-2 border rounded-md"
-                                            placeholder="Enter your password"
-                                            onChange={(event) => setPassword(event.target.value)}
-                                        />
-                                        <div className="text-sm text-gray-600 mt-2">
-                                            <div>Password needs to have:</div>
-                                            <div>• At least one uppercase character</div>
-                                            <div>• At least one special character</div>
-                                            <div>• At least one number character</div>
+                                {activeTab === "login" && (
+                                    <form className="space-y-4">
+                                        <div>
+                                            <label htmlFor="username" className="block font-medium">
+                                                Username
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="username"
+                                                className="w-full p-2 border rounded-md"
+                                                placeholder="Enter your username"
+                                                onChange={(event) => setUsername(event.target.value)}
+                                            />
                                         </div>
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <Button
-                                            type="submit"
-                                            className="bg-teal-500 text-white hover:bg-teal-600 transition-all px-4 py-2 rounded-md"
-                                        >
-                                            Register
-                                        </Button>
-                                    </div>
-                                </form>
-                            )}
-                        </DialogContent>
-                    </Dialog>
+                                        <div>
+                                            <label htmlFor="password" className="block font-medium">
+                                                Password
+                                            </label>
+                                            <input
+                                                type="password"
+                                                id="password"
+                                                className="w-full p-2 border rounded-md"
+                                                placeholder="Enter your password"
+                                                onChange={(event) => setPassword(event.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="flex justify-end">
+                                            <Button
+                                                onClick={onSubmitLogin}
+                                                className="bg-teal-500 text-white hover:bg-teal-600 transition-all px-4 py-2 rounded-md"
+                                            >
+                                                Login
+                                            </Button>
+                                        </div>
+                                    </form>
+                                )}
+                                {activeTab === "register" && (
+                                    <form className="space-y-4" onSubmit={onSubmit}>
+                                        <div>
+                                            <label htmlFor="name" className="block font-medium">
+                                                Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="name"
+                                                className="w-full p-2 border rounded-md"
+                                                placeholder="Enter your name"
+                                                onChange={(event) => setName(event.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="email" className="block font-medium">
+                                                Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                id="email"
+                                                className="w-full p-2 border rounded-md"
+                                                placeholder="Enter your email"
+                                                onChange={(event) => setEmail(event.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="role" className="block font-medium">
+                                                Role
+                                            </label>
+                                            <select
+                                                id="role"
+                                                className="w-full p-2 border rounded-md"
+                                                value={role}
+                                                onChange={(event) => setRole(event.target.value)}
+                                            >
+                                                <option value="customer">Customer</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="username" className="block font-medium">
+                                                Username
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="username"
+                                                className="w-full p-2 border rounded-md"
+                                                placeholder="Enter your username"
+                                                onChange={(event) => setUsername(event.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="password" className="block font-medium">
+                                                Password
+                                            </label>
+                                            <input
+                                                type="password"
+                                                id="password"
+                                                className="w-full p-2 border rounded-md"
+                                                placeholder="Enter your password"
+                                                onChange={(event) => setPassword(event.target.value)}
+                                            />
+                                            <div className="text-sm text-gray-600 mt-2">
+                                                <div>Password needs to have:</div>
+                                                <div>• At least one uppercase character</div>
+                                                <div>• At least one special character</div>
+                                                <div>• At least one number character</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <Button
+                                                type="submit"
+                                                className="bg-teal-500 text-white hover:bg-teal-600 transition-all px-4 py-2 rounded-md"
+                                            >
+                                                Register
+                                            </Button>
+                                        </div>
+                                    </form>
+                                )}
+                            </DialogContent>
+                        </Dialog>
                     )}
                 </div>
             </nav>
