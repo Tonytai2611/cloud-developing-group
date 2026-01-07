@@ -1,4 +1,4 @@
-(# BrewCraft React App
+# BrewCraft React App
 
 This repository contains the front-end React application for "BrewCraft" — a sample restaurant & cafe web app built with Create React App and Tailwind CSS.
 
