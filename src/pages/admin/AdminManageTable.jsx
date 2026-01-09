@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tableApi } from '../../services/tableApi';
-import { Plus, Edit2, Trash2, Users, ArrowLeft, Home } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, ArrowLeft, Home, LayoutGrid, CheckCircle, Clock, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminManageTable() {
@@ -101,39 +101,64 @@ export default function AdminManageTable() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'AVAILABLE': return 'bg-green-100 border-green-500 text-green-800';
-      case 'RESERVED': return 'bg-yellow-100 border-yellow-500 text-yellow-800';
-      default: return 'bg-gray-100 border-gray-500 text-gray-800';
+      case 'AVAILABLE': return 'border-emerald-300 bg-emerald-50';
+      case 'RESERVED': return 'border-amber-300 bg-amber-50';
+      default: return 'border-gray-300 bg-gray-50';
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
-      case 'AVAILABLE': return 'Available';
-      case 'RESERVED': return 'Reserved';
-      default: return status;
+      case 'AVAILABLE':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
+            <CheckCircle className="w-3 h-3" />
+            Available
+          </span>
+        );
+      case 'RESERVED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-300">
+            <Clock className="w-3 h-3" />
+            Reserved
+          </span>
+        );
+      default:
+        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">{status}</span>;
     }
   };
 
   const stats = {
     total: tables.length,
     available: tables.filter(t => t.status === 'AVAILABLE').length,
-    reserved: tables.filter(t => t.status === 'RESERVED').length
+    reserved: tables.filter(t => t.status === 'RESERVED').length,
+    totalSeats: tables.reduce((sum, t) => sum + t.seats, 0)
   };
+
+  if (loading && tables.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-xl font-semibold text-teal-600">Loading tables...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 max-w-7xl">
         {/* Navigation */}
         <div className="mb-6 flex items-center gap-4">
           <button
             onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors group"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             Back to Dashboard
           </button>
-          <span className="text-gray-400">|</span>
+          <span className="text-gray-300">|</span>
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors"
@@ -144,14 +169,14 @@ export default function AdminManageTable() {
         </div>
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800">Manage Tables</h1>
-            <p className="text-gray-600 mt-2">Table Layout</p>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Manage Tables</h1>
+            <p className="text-gray-600">Configure your restaurant table layout</p>
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="bg-teal-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-teal-600 transition-all shadow-md flex items-center gap-2"
+            className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold py-3 px-6 rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2 justify-center"
           >
             <Plus className="w-5 h-5" />
             Add New Table
@@ -159,108 +184,169 @@ export default function AdminManageTable() {
         </div>
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6 text-center">
-            <div className="text-4xl font-bold text-gray-800">{stats.total}</div>
-            <div className="text-gray-600 mt-2">Total Tables</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-gray-100 p-3 rounded-xl">
+                <LayoutGrid className="w-6 h-6 text-gray-600" />
+              </div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Total Tables</h3>
+            <p className="text-3xl font-bold text-gray-800">{stats.total}</p>
           </div>
-          <div className="bg-green-50 rounded-lg shadow p-6 text-center border-2 border-green-200">
-            <div className="text-4xl font-bold text-green-600">{stats.available}</div>
-            <div className="text-green-700 mt-2">Available</div>
+
+          <div className="bg-white border border-emerald-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-emerald-50 p-3 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+            <h3 className="text-emerald-600 text-sm font-medium mb-1">Available</h3>
+            <p className="text-3xl font-bold text-emerald-700">{stats.available}</p>
           </div>
-          <div className="bg-yellow-50 rounded-lg shadow p-6 text-center border-2 border-yellow-200">
-            <div className="text-4xl font-bold text-yellow-600">{stats.reserved}</div>
-            <div className="text-yellow-700 mt-2">Reserved</div>
+
+          <div className="bg-white border border-amber-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-amber-50 p-3 rounded-xl">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+            </div>
+            <h3 className="text-amber-600 text-sm font-medium mb-1">Reserved</h3>
+            <p className="text-3xl font-bold text-amber-700">{stats.reserved}</p>
+          </div>
+
+          <div className="bg-white border border-blue-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <div className="bg-blue-50 p-3 rounded-xl">
+                <Users className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+            <h3 className="text-blue-600 text-sm font-medium mb-1">Total Seats</h3>
+            <p className="text-3xl font-bold text-blue-700">{stats.totalSeats}</p>
           </div>
         </div>
 
         {/* Tables Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {tables.map(table => (
             <div
               key={table.id}
-              className={`rounded-lg shadow-lg p-6 border-4 transition-all hover:shadow-xl ${getStatusColor(table.status)}`}
+              className={`rounded-2xl shadow-md border-2 transition-all hover:shadow-xl hover:scale-105 ${getStatusColor(table.status)}`}
             >
-              <div className="text-center mb-4">
-                <h3 className="text-2xl font-bold">{table.tableNumber}</h3>
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <Users className="w-5 h-5" />
-                  <span className="font-semibold">{table.seats} seats</span>
+              <div className="p-6">
+                <div className="text-center mb-4">
+                  <div className="bg-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
+                    <LayoutGrid className="w-8 h-8 text-teal-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{table.tableNumber}</h3>
+                  <div className="flex items-center justify-center gap-2 text-gray-700">
+                    <Users className="w-4 h-4" />
+                    <span className="font-semibold text-sm">{table.seats} seats</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="text-center mb-4">
-                <span className="inline-block px-4 py-2 rounded-full text-sm font-bold bg-white bg-opacity-70">
-                  {getStatusText(table.status)}
-                </span>
-              </div>
+                <div className="text-center mb-4">
+                  {getStatusBadge(table.status)}
+                </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleOpenModal(table)}
-                  className="flex-1 bg-white bg-opacity-70 hover:bg-opacity-100 p-2 rounded-lg transition-all flex items-center justify-center gap-1"
-                  title="Edit"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span className="text-sm font-semibold">Edit</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(table.id)}
-                  className="flex-1 bg-white bg-opacity-70 hover:bg-opacity-100 p-2 rounded-lg transition-all flex items-center justify-center gap-1"
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="text-sm font-semibold">Delete</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleOpenModal(table)}
+                    className="flex-1 bg-white hover:bg-gray-50 border border-gray-300 p-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 font-medium text-gray-700 hover:border-teal-400 hover:text-teal-600"
+                    title="Edit"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span className="text-sm">Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(table.id)}
+                    className="flex-1 bg-white hover:bg-red-50 border border-gray-300 p-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 font-medium text-gray-700 hover:border-red-400 hover:text-red-600"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="text-sm">Delete</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
+
+        {tables.length === 0 && (
+          <div className="text-center py-20 bg-white rounded-2xl shadow-md border border-gray-200">
+            <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LayoutGrid className="w-10 h-10 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-lg font-semibold">No tables yet</p>
+            <p className="text-gray-400 text-sm mt-2 mb-4">Add your first table to get started</p>
+            <button
+              onClick={() => handleOpenModal()}
+              className="bg-teal-500 text-white font-semibold py-2 px-6 rounded-xl hover:bg-teal-600 transition-all inline-flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Add Table
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
-            <div className="p-6 border-b">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {editingTable ? 'Edit Table' : 'Add New Table'}
-              </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-500 to-cyan-500 p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">
+                  {editingTable ? 'Edit Table' : 'Add New Table'}
+                </h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Table Name *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Table Name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.tableNumber}
                     onChange={(e) => setFormData({ ...formData, tableNumber: e.target.value })}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="Table 01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                    placeholder="e.g., Table 01, VIP Table A"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Number of Seats *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Number of Seats <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={formData.seats}
                     onChange={(e) => setFormData({ ...formData, seats: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   >
-                    {[2, 4, 6, 8, 10].map(num => (
+                    {[2, 4, 6, 8, 10, 12].map(num => (
                       <option key={num} value={num}>{num} seats</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Status *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Status <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   >
                     <option value="AVAILABLE">Available</option>
                     <option value="RESERVED">Reserved</option>
@@ -268,20 +354,20 @@ export default function AdminManageTable() {
                 </div>
               </div>
 
-              <div className="flex gap-4 mt-6">
+              <div className="flex gap-3 mt-8">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg hover:bg-gray-300 transition-all"
+                  className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-teal-500 text-white font-semibold py-3 rounded-lg hover:bg-teal-600 transition-all disabled:bg-gray-300"
+                  className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold py-3 rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all disabled:from-gray-300 disabled:to-gray-300 shadow-md"
                 >
-                  {loading ? 'Processing...' : (editingTable ? 'Update' : 'Add Table')}
+                  {loading ? 'Processing...' : (editingTable ? 'Update Table' : 'Add Table')}
                 </button>
               </div>
             </form>

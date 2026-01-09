@@ -2,7 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tableApi } from '../../services/tableApi';
 import { bookingApi } from '../../services/bookingApi';
-import { CheckCircle, XCircle, Clock, DollarSign, Filter, ArrowLeft, Home } from 'lucide-react';
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  DollarSign,
+  Filter,
+  ArrowLeft,
+  Home,
+  Calendar,
+  Users,
+  Phone,
+  Mail,
+  MessageSquare,
+  UtensilsCrossed,
+  TrendingUp
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminManageOrderingFood() {
@@ -41,7 +56,7 @@ export default function AdminManageOrderingFood() {
       const response = await bookingApi.updateStatus(bookingId, 'CONFIRMED');
       setBookings(bookings.map(b => b.id === bookingId ? response.data : b));
       toast.success("Booking confirmed successfully");
-      fetchData(); // Refresh data
+      fetchData();
     } catch (err) {
       toast.error("Failed to confirm booking", {
         description: err.message
@@ -59,7 +74,7 @@ export default function AdminManageOrderingFood() {
       await bookingApi.updateStatus(bookingId, 'REJECTED');
       setBookings(bookings.filter(b => b.id !== bookingId));
       toast.success("Booking rejected");
-      fetchData(); // Refresh to update table status
+      fetchData();
     } catch (err) {
       toast.error("Failed to reject booking", {
         description: err.message
@@ -93,22 +108,36 @@ export default function AdminManageOrderingFood() {
   const stats = {
     total: bookings.reduce((sum, b) => sum + b.total, 0),
     pending: bookings.filter(b => b.status === 'PENDING').reduce((sum, b) => sum + b.total, 0),
-    confirmed: bookings.filter(b => b.status === 'CONFIRMED').reduce((sum, b) => sum + b.total, 0)
+    confirmed: bookings.filter(b => b.status === 'CONFIRMED').reduce((sum, b) => sum + b.total, 0),
+    count: bookings.length,
+    pendingCount: bookings.filter(b => b.status === 'PENDING').length,
+    confirmedCount: bookings.filter(b => b.status === 'CONFIRMED').length
   };
+
+  if (loading && bookings.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-xl font-semibold text-teal-600">Loading orders...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 max-w-7xl">
         {/* Navigation */}
         <div className="mb-6 flex items-center gap-4">
           <button
             onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors group"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             Back to Dashboard
           </button>
-          <span className="text-gray-400">|</span>
+          <span className="text-gray-300">|</span>
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors"
@@ -120,194 +149,251 @@ export default function AdminManageOrderingFood() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800">Manage Orders</h1>
-          <p className="text-gray-600 mt-2">Review and manage bookings</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Manage Orders</h1>
+          <p className="text-gray-600">Review and manage customer bookings</p>
         </div>
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-lg p-6 text-white">
-            <div className="flex items-center gap-3 mb-2">
-              <DollarSign className="w-8 h-8" />
-              <div className="text-sm font-semibold">Total Revenue</div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-emerald-50 p-3 rounded-xl">
+                <DollarSign className="w-6 h-6 text-emerald-600" />
+              </div>
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
             </div>
-            <div className="text-4xl font-bold">${(stats.total / 1000).toFixed(2)}</div>
-            <div className="text-sm mt-2 opacity-90">{bookings.length} orders</div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Total Revenue</h3>
+            <p className="text-3xl font-bold text-gray-800">{stats.total.toLocaleString()}₫</p>
+            <p className="text-sm text-gray-500 mt-2">{stats.count} total orders</p>
           </div>
 
-          <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg shadow-lg p-6 text-white">
-            <div className="flex items-center gap-3 mb-2">
-              <Clock className="w-8 h-8" />
-              <div className="text-sm font-semibold">Pending Approval</div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-amber-50 p-3 rounded-xl">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+              <TrendingUp className="w-5 h-5 text-amber-500" />
             </div>
-            <div className="text-4xl font-bold">${(stats.pending / 1000).toFixed(2)}</div>
-            <div className="text-sm mt-2 opacity-90">
-              {bookings.filter(b => b.status === 'PENDING').length} orders
-            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Pending Approval</h3>
+            <p className="text-3xl font-bold text-gray-800">{stats.pending.toLocaleString()}₫</p>
+            <p className="text-sm text-gray-500 mt-2">{stats.pendingCount} pending orders</p>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-lg p-6 text-white">
-            <div className="flex items-center gap-3 mb-2">
-              <CheckCircle className="w-8 h-8" />
-              <div className="text-sm font-semibold">Confirmed</div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-blue-50 p-3 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-blue-600" />
+              </div>
+              <TrendingUp className="w-5 h-5 text-blue-500" />
             </div>
-            <div className="text-4xl font-bold">${(stats.confirmed / 1000).toFixed(2)}</div>
-            <div className="text-sm mt-2 opacity-90">
-              {bookings.filter(b => b.status === 'CONFIRMED').length} orders
-            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">Confirmed</h3>
+            <p className="text-3xl font-bold text-gray-800">{stats.confirmed.toLocaleString()}₫</p>
+            <p className="text-sm text-gray-500 mt-2">{stats.confirmedCount} confirmed orders</p>
           </div>
         </div>
 
         {/* Filter */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6 mb-6">
           <div className="flex items-center gap-3 flex-wrap">
-            <Filter className="w-5 h-5 text-gray-600" />
+            <div className="flex items-center gap-2 text-gray-700 font-semibold">
+              <Filter className="w-5 h-5 text-teal-600" />
+              Filter:
+            </div>
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === 'ALL'
-                ? 'bg-teal-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${filter === 'ALL'
+                  ? 'bg-teal-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
-              All ({bookings.length})
+              All <span className="ml-1 opacity-75">({stats.count})</span>
             </button>
             <button
               onClick={() => setFilter('PENDING')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === 'PENDING'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${filter === 'PENDING'
+                  ? 'bg-amber-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
-              Pending ({bookings.filter(b => b.status === 'PENDING').length})
+              Pending <span className="ml-1 opacity-75">({stats.pendingCount})</span>
             </button>
             <button
               onClick={() => setFilter('CONFIRMED')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === 'CONFIRMED'
-                ? 'bg-green-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${filter === 'CONFIRMED'
+                  ? 'bg-emerald-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
-              Confirmed ({bookings.filter(b => b.status === 'CONFIRMED').length})
+              Confirmed <span className="ml-1 opacity-75">({stats.confirmedCount})</span>
             </button>
           </div>
         </div>
 
         {/* Bookings List */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredBookings.map(booking => (
             <div
               key={booking.id}
-              className={`bg-white rounded-lg shadow-lg p-6 transition-all hover:shadow-xl ${booking.status === 'PENDING' ? 'border-l-4 border-yellow-500' : 'border-l-4 border-green-500'
-                }`}
+              className="bg-white rounded-2xl shadow-md border-2 border-gray-200 hover:border-teal-300 hover:shadow-xl transition-all overflow-hidden"
             >
-              {/* Header */}
-              <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-800">{booking.customerName}</h3>
-                  <p className="text-gray-600">{booking.email}</p>
-                  <p className="text-gray-600">{booking.phone}</p>
-                  <p className="text-xs text-gray-500 mt-1">ID: {booking.id}</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className={`px-4 py-2 rounded-full text-sm font-bold ${booking.status === 'CONFIRMED'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                    {booking.status === 'CONFIRMED' ? '✓ Confirmed' : '⏳ Pending'}
-                  </span>
-                </div>
-              </div>
+              {/* Status Bar */}
+              <div className={`h-2 ${booking.status === 'PENDING' ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}></div>
 
-              {/* Booking Details */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 bg-gray-50 rounded-lg p-4">
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Date</p>
-                  <p className="font-semibold">{booking.date}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Time</p>
-                  <p className="font-semibold">{booking.time}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Guests</p>
-                  <p className="font-semibold">{booking.guests} people</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Table</p>
-                  <p className="font-semibold">{booking.tableId || 'Not assigned'}</p>
-                </div>
-              </div>
-
-              {/* Special Requests */}
-              {booking.specialRequests && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded p-3 mb-4">
-                  <p className="text-sm font-semibold text-yellow-800 mb-1">📝 Special Requests:</p>
-                  <p className="text-sm text-yellow-700">{booking.specialRequests}</p>
-                </div>
-              )}
-
-              {/* Orders */}
-              {booking.selectedItems && booking.selectedItems.length > 0 && (
-                <div className="border-t pt-4 mb-4">
-                  <h4 className="font-bold text-gray-800 mb-3">Order Details:</h4>
-                  <div className="space-y-2">
-                    {booking.selectedItems.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded">
-                        <div>
-                          <span className="font-semibold text-gray-800">{item.name}</span>
-                          <span className="text-gray-600 text-sm ml-2">x{item.quantity}</span>
-                        </div>
-                        <span className="font-bold text-teal-600">
-                          ${((item.price * item.quantity) / 1000).toFixed(2)}
-                        </span>
+              <div className="p-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-6 gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="bg-teal-50 p-2 rounded-lg">
+                        <Users className="w-5 h-5 text-teal-600" />
                       </div>
-                    ))}
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-800">{booking.customerName}</h3>
+                        <div className="flex flex-col gap-1 mt-2">
+                          <div className="flex items-center gap-2 text-gray-600 text-sm">
+                            <Mail className="w-4 h-4" />
+                            {booking.email}
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600 text-sm">
+                            <Phone className="w-4 h-4" />
+                            {booking.phone}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 font-mono">ID: {booking.id}</p>
                   </div>
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t-2 border-gray-200">
-                    <span className="text-lg font-bold text-gray-800">Total:</span>
-                    <span className="text-2xl font-bold text-teal-600">
-                      ${(booking.total / 1000).toFixed(2)}
+                  <div>
+                    <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold ${booking.status === 'CONFIRMED'
+                        ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border-2 border-amber-200'
+                      }`}>
+                      {booking.status === 'CONFIRMED' ? (
+                        <><CheckCircle className="w-4 h-4" /> Confirmed</>
+                      ) : (
+                        <><Clock className="w-4 h-4" /> Pending</>
+                      )}
                     </span>
                   </div>
                 </div>
-              )}
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-3 pt-4 border-t">
-                {booking.status === 'PENDING' && (
-                  <button
-                    onClick={() => handleApprove(booking.id)}
-                    className="flex-1 min-w-[150px] bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-all font-semibold flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle className="w-5 h-5" />
-                    Approve
-                  </button>
+                {/* Booking Details */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-gray-50 rounded-xl p-4">
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                      <Calendar className="w-3 h-3" />
+                      Date
+                    </div>
+                    <p className="font-bold text-gray-800">{booking.date}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                      <Clock className="w-3 h-3" />
+                      Time
+                    </div>
+                    <p className="font-bold text-gray-800">{booking.time}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                      <Users className="w-3 h-3" />
+                      Guests
+                    </div>
+                    <p className="font-bold text-gray-800">{booking.guests} people</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                      <UtensilsCrossed className="w-3 h-3" />
+                      Table
+                    </div>
+                    <p className="font-bold text-gray-800">{booking.tableId || 'Not assigned'}</p>
+                  </div>
+                </div>
+
+                {/* Special Requests */}
+                {booking.specialRequests && (
+                  <div className="bg-amber-50 border-l-4 border-amber-400 rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-2 text-amber-800 font-semibold mb-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Special Requests
+                    </div>
+                    <p className="text-sm text-amber-700">{booking.specialRequests}</p>
+                  </div>
                 )}
 
-                {booking.status === 'PENDING' && (
-                  <button
-                    onClick={() => handleReject(booking.id)}
-                    className="flex-1 min-w-[150px] bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all font-semibold flex items-center justify-center gap-2"
-                  >
-                    <XCircle className="w-5 h-5" />
-                    Reject
-                  </button>
+                {/* Orders */}
+                {booking.selectedItems && booking.selectedItems.length > 0 && (
+                  <div className="border-t-2 border-gray-100 pt-6 mb-6">
+                    <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <UtensilsCrossed className="w-5 h-5 text-teal-600" />
+                      Order Details
+                    </h4>
+                    <div className="space-y-3">
+                      {booking.selectedItems.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-teal-100 text-teal-700 font-bold px-3 py-1 rounded-lg text-sm">
+                              x{item.quantity}
+                            </div>
+                            <span className="font-semibold text-gray-800">{item.name}</span>
+                          </div>
+                          <span className="font-bold text-teal-600">
+                            {(item.price * item.quantity).toLocaleString()}₫
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between items-center mt-6 pt-4 border-t-2 border-gray-200">
+                      <span className="text-lg font-bold text-gray-800">Total Amount:</span>
+                      <span className="text-3xl font-bold text-teal-600">
+                        {booking.total.toLocaleString()}₫
+                      </span>
+                    </div>
+                  </div>
                 )}
 
-                <button
-                  onClick={() => handleDelete(booking.id)}
-                  className="flex-1 min-w-[150px] bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-all font-semibold"
-                >
-                  Delete
-                </button>
+                {/* Actions */}
+                <div className="flex flex-wrap gap-3 pt-4 border-t-2 border-gray-100">
+                  {booking.status === 'PENDING' && (
+                    <>
+                      <button
+                        onClick={() => handleApprove(booking.id)}
+                        disabled={loading}
+                        className="flex-1 min-w-[150px] bg-emerald-500 text-white py-3 px-6 rounded-xl hover:bg-emerald-600 transition-all font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:bg-gray-400"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(booking.id)}
+                        disabled={loading}
+                        className="flex-1 min-w-[150px] bg-amber-500 text-white py-3 px-6 rounded-xl hover:bg-amber-600 transition-all font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:bg-gray-400"
+                      >
+                        <XCircle className="w-5 h-5" />
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => handleDelete(booking.id)}
+                    disabled={loading}
+                    className="flex-1 min-w-[150px] bg-red-500 text-white py-3 px-6 rounded-xl hover:bg-red-600 transition-all font-semibold shadow-md hover:shadow-lg disabled:bg-gray-400"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
         {filteredBookings.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-500 text-lg">No orders found</p>
+          <div className="text-center py-20 bg-white rounded-2xl shadow-md border border-gray-200">
+            <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <UtensilsCrossed className="w-10 h-10 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-lg font-semibold">No orders found</p>
+            <p className="text-gray-400 text-sm mt-2">Orders will appear here when customers make bookings</p>
           </div>
         )}
       </div>
