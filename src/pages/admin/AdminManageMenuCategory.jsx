@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { menuApi } from '../../services/menuApi';
-import { Plus, Edit2, Trash2, Search, ArrowLeft, Home } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, ArrowLeft, Home, ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
+import AnimatedList from '../../components/ui/AnimatedList';
 
 export default function AdminManageMenu() {
     const navigate = useNavigate();
@@ -104,94 +105,114 @@ export default function AdminManageMenu() {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-teal-500 text-white">
-                            <tr>
-                                <th className="px-6 py-4 text-left">Menu Title</th>
-                                <th className="px-6 py-4 text-left">Dishes (with Images & Prices)</th>
-                                <th className="px-6 py-4 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredMenu.map((category, index) => (
-                                <tr key={category.id} className={`border-b hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                                    <td className="px-6 py-4">
-                                        <p className="font-semibold text-gray-800">{category.title}</p>
-                                        <p className="text-sm text-gray-600">{category.dishes?.length || 0} dishes</p>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="space-y-2">
-                                            {category.dishes?.map((dish, idx) => (
-                                                <div key={idx} className="flex items-center gap-4 p-3 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200 hover:border-teal-300 transition-all">
-                                                    {/* Dish Image */}
-                                                    <div className="flex-shrink-0">
-                                                        {dish.image ? (
-                                                            <img
-                                                                src={dish.image}
-                                                                alt={dish.name}
-                                                                className="w-20 h-20 object-cover rounded-lg shadow-md border-2 border-white"
-                                                                onError={(e) => {
-                                                                    e.target.src = 'https://placehold.co/80x80/teal/white?text=No+Img';
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xs">
-                                                                No Image
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Dish Info */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-gray-800 text-base truncate">{dish.name}</p>
-                                                        <p className="text-sm text-gray-600 line-clamp-1">{dish.description || 'No description'}</p>
-                                                    </div>
-
-                                                    {/* Dish Price */}
-                                                    <div className="flex-shrink-0 text-right">
-                                                        <p className="text-xs text-gray-500 mb-1">Price</p>
-                                                        <p className="font-bold text-teal-600 text-lg whitespace-nowrap">
-                                                            {dish.price ? `${dish.price.toLocaleString('vi-VN')}\u20ab` : 'N/A'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {(!category.dishes || category.dishes.length === 0) && (
-                                                <p className="text-gray-400 italic text-sm">No dishes in this category</p>
-                                            )}
+                {/* Animated Menu Categories */}
+                {filteredMenu.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+                        <ChefHat className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                            {loading ? 'Loading...' : 'No categories found'}
+                        </h3>
+                        <p className="text-gray-400">Try adjusting your search or add a new category</p>
+                    </div>
+                ) : (
+                    <AnimatedList
+                        items={filteredMenu}
+                        onItemSelect={(category) => handleUpdate(category)}
+                        showGradients={true}
+                        enableArrowNavigation={true}
+                        displayScrollbar={true}
+                        maxHeight="calc(100vh - 300px)"
+                        gradientColors={{ from: '#f9fafb', to: 'transparent' }}
+                        renderItem={(category, index, isSelected) => (
+                            <div 
+                                className={`bg-white rounded-xl border-2 transition-all duration-300 overflow-hidden ${
+                                    isSelected 
+                                        ? 'border-teal-500 shadow-xl shadow-teal-500/10' 
+                                        : 'border-gray-100 hover:border-teal-300 shadow-sm hover:shadow-lg'
+                                }`}
+                            >
+                                {/* Category Header */}
+                                <div className={`px-5 py-4 border-b transition-colors ${
+                                    isSelected ? 'bg-teal-50 border-teal-200' : 'bg-gray-50 border-gray-100'
+                                }`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-800">{category.title}</h3>
+                                            <p className="text-sm text-gray-500">{category.dishes?.length || 0} dishes</p>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => handleUpdate(category)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdate(category);
+                                                }}
                                                 className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
                                                 title="Edit"
                                             >
-                                                <Edit2 className="w-5 h-5" />
+                                                <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(category.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(category.id);
+                                                }}
                                                 className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                                 title="Delete"
                                             >
-                                                <Trash2 className="w-5 h-5" />
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    </div>
+                                </div>
 
-                    {filteredMenu.length === 0 && (
-                        <div className="text-center py-12 text-gray-500">
-                            {loading ? 'Loading...' : 'No categories found'}
-                        </div>
-                    )}
-                </div>
+                                {/* Dishes List */}
+                                <div className="p-4 space-y-3">
+                                    {category.dishes?.map((dish, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            className="flex items-center gap-4 p-3 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all"
+                                        >
+                                            {/* Dish Image */}
+                                            <div className="flex-shrink-0">
+                                                {dish.image ? (
+                                                    <img
+                                                        src={dish.image}
+                                                        alt={dish.name}
+                                                        className="w-16 h-16 object-cover rounded-lg shadow-md border-2 border-white"
+                                                        onError={(e) => {
+                                                            e.target.src = 'https://placehold.co/80x80/teal/white?text=No+Img';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xs">
+                                                        No Image
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Dish Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-800 truncate">{dish.name}</p>
+                                                <p className="text-sm text-gray-500 line-clamp-1">{dish.description || 'No description'}</p>
+                                            </div>
+
+                                            {/* Dish Price */}
+                                            <div className="flex-shrink-0 text-right">
+                                                <p className="text-xs text-gray-400">Price</p>
+                                                <p className="font-bold text-teal-600 text-lg">
+                                                    {dish.price ? `${dish.price.toLocaleString('vi-VN')}₫` : 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!category.dishes || category.dishes.length === 0) && (
+                                        <p className="text-gray-400 italic text-sm text-center py-4">No dishes in this category</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    />
+                )}
             </div>
         </div>
     );
