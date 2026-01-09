@@ -51,7 +51,7 @@ Parameters:
 Mappings:
   RegionMap:
     us-east-1:
-      AMI: ami-0c02fb55b34c2e0c5
+      AMI: ami-07ff62358b87c7116
 
 Resources:
   VPC:
@@ -225,106 +225,77 @@ Resources:
         InstanceType: !Ref InstanceType
         KeyName: !Ref KeyPairName
         IamInstanceProfile:
-          Name: LabUserProfile
+          Name: LabInstanceProfile
         SecurityGroupIds:
           - !Ref EC2SecurityGroup
         UserData:
-          Fn::Base64: !Sub |
-            #!/bin/bash
-            set -e
-            dnf update -y
-            curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-            dnf install -y nodejs git
-            mkdir -p /opt/brewcraft
-            cd /opt/brewcraft
-            cat > server.js << 'EOF'
-            const express = require('express');
-            const app = express();
-            const port = 3000;
-            app.use(express.static('build'));
-            app.get('/health', (req, res) => {
-              res.status(200).json({ status: 'healthy' });
-            });
-            app.get('*', (req, res) => {
-              res.send(\`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                  <title>BrewCraft</title>
-                  <style>
-                    body { 
-                      font-family: Arial, sans-serif; 
-                      display: flex; 
-                      justify-content: center; 
-                      align-items: center; 
-                      height: 100vh; 
-                      margin: 0;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white;
-                    }
-                    .container {
-                      text-align: center;
-                      padding: 2rem;
-                      background: rgba(255,255,255,0.1);
-                      border-radius: 10px;
-                      backdrop-filter: blur(10px);
-                    }
-                    h1 { font-size: 3rem; margin-bottom: 1rem; }
-                    p { font-size: 1.2rem; }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <h1>BrewCraft</h1>
-                    <p>Welcome to BrewCraft Restaurant & Cafe</p>
-                    <p>Instance: ${!Ref 'AWS::StackName'}</p>
-                    <p>Region: ${AWS::Region}</p>
-                  </div>
-                </body>
-                </html>
-              \`);
-            });
-            app.listen(port, '0.0.0.0', () => {
-              console.log(\\\`BrewCraft app listening on port \\\${port}\\\`);
-            });
-            EOF
-            cat > package.json << 'EOF'
-            {
-              "name": "brewcraft",
-              "version": "1.0.0",
-              "main": "server.js",
-              "dependencies": {
-                "express": "^4.18.2"
+          Fn::Base64:
+            Fn::Sub: |
+              #!/bin/bash
+              set -e
+              
+              dnf update -y
+              
+              curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+              dnf install -y nodejs git
+              
+              mkdir -p /opt/brewcraft
+              cd /opt/brewcraft
+              
+              cat > server.js << 'EOFJS'
+              const express = require('express');
+              const app = express();
+              const port = 3000;
+              
+              app.use(express.static('build'));
+              
+              app.get('/health', (req, res) => {
+                res.status(200).json({ status: 'healthy' });
+              });
+              
+              app.get('*', (req, res) => {
+                res.send('<!DOCTYPE html><html><head><title>BrewCraft</title><style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white}.container{text-align:center;padding:2rem;background:rgba(255,255,255,0.1);border-radius:10px;backdrop-filter:blur(10px)}h1{font-size:3rem;margin-bottom:1rem}p{font-size:1.2rem}</style></head><body><div class="container"><h1>🍺 BrewCraft</h1><p>Welcome to BrewCraft Restaurant & Cafe</p><p>Instance: ${AWS::StackName}</p><p>Region: ${AWS::Region}</p></div></body></html>');
+              });
+              
+              app.listen(port, '0.0.0.0', () => {
+                console.log('BrewCraft app listening on port ' + port);
+              });
+              EOFJS
+              
+              cat > package.json << 'EOFJSON'
+              {
+                "name": "brewcraft",
+                "version": "1.0.0",
+                "main": "server.js",
+                "dependencies": {
+                  "express": "^4.18.2"
+                }
               }
-            }
-            EOF
-            npm install
-            cat > /etc/systemd/system/brewcraft.service << 'EOF'
-            [Unit]
-            Description=BrewCraft Application
-            After=network.target
-            [Service]
-            Type=simple
-            User=root
-            WorkingDirectory=/opt/brewcraft
-            ExecStart=/usr/bin/node server.js
-            Restart=always
-            RestartSec=10
-            Environment=NODE_ENV=production
-            Environment=AWS_REGION=${AWS::Region}
-            Environment=MENU_TABLE=${MenuTable}
-            Environment=BOOKINGS_TABLE=${BookingsTable}
-            Environment=TABLES_TABLE=${TablesTable}
-            Environment=ORDERS_TABLE=${OrdersTable}
-            Environment=VISITORS_TABLE=${VisitorsTable}
-            Environment=CONTENT_TABLE=${ContentTable}
-            Environment=SESSIONS_TABLE=${SessionsTable}
-            [Install]
-            WantedBy=multi-user.target
-            EOF
-            systemctl daemon-reload
-            systemctl enable brewcraft
-            systemctl start brewcraft
+              EOFJSON
+              
+              npm install
+              
+              cat > /etc/systemd/system/brewcraft.service << 'EOFSVC'
+              [Unit]
+              Description=BrewCraft Application
+              After=network.target
+              
+              [Service]
+              Type=simple
+              User=root
+              WorkingDirectory=/opt/brewcraft
+              ExecStart=/usr/bin/node server.js
+              Restart=always
+              RestartSec=10
+              Environment=NODE_ENV=production
+              
+              [Install]
+              WantedBy=multi-user.target
+              EOFSVC
+              
+              systemctl daemon-reload
+              systemctl enable brewcraft
+              systemctl start brewcraft
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -438,7 +409,7 @@ Resources:
     Type: AWS::Route53::HealthCheck
     Properties:
       HealthCheckConfig:
-        Type: HTTPS_STR_MATCH
+        Type: HTTP_STR_MATCH
         ResourcePath: /
         FullyQualifiedDomainName: !GetAtt ApplicationLoadBalancer.DNSName
         Port: 80
