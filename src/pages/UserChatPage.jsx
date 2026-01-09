@@ -29,6 +29,22 @@ const UserChatPage = () => {
     const messagesEndRef = useRef(null);
     const WS_URL = "wss://3w3qjyvvl9.execute-api.us-east-1.amazonaws.com/production";
 
+    // Format timestamp to local Vietnam time
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp) return '';
+        // Add Z suffix if missing to ensure UTC parsing
+        let ts = timestamp;
+        if (!ts.endsWith('Z') && !ts.includes('+')) {
+            ts = ts + 'Z';
+        }
+        const date = new Date(ts);
+        return date.toLocaleTimeString('vi-VN', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+    };
+
     // Show notification helper
     const showNotification = (msg) => {
         setNotification(msg);
@@ -100,7 +116,13 @@ const UserChatPage = () => {
                     timestamp: data.timestamp,
                     isUser: isMyMessage
                 };
-                setMessages(prev => [...prev, newMsg]);
+                
+                // Check for duplicates before adding
+                setMessages(prev => {
+                    const exists = prev.some(m => m.id === data.messageId);
+                    if (exists) return prev;
+                    return [...prev, newMsg];
+                });
 
                 // Show notification if it's from Admin
                 if (!isMyMessage) {
@@ -146,24 +168,28 @@ const UserChatPage = () => {
         };
 
         ws.send(JSON.stringify(messageData));
-
-        // Optimistic update: Show message immediately
-        setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            text: newMessage,
-            sender: 'You',
-            senderId: userEmail,
-            timestamp: new Date().toISOString(),
-            isUser: true
-        }]);
-
         setNewMessage('');
+        // Message will be added when server broadcasts back via newMessage event
     };
 
-    // Auto-scroll to bottom
+    // Smart scroll - only auto-scroll if user is at bottom
+    const messagesContainerRef = useRef(null);
+    const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+    const handleScroll = () => {
+        if (messagesContainerRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+            const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+            setShouldAutoScroll(isAtBottom);
+        }
+    };
+
+    // Scroll to bottom only if user was at bottom
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        if (shouldAutoScroll) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages, shouldAutoScroll]);
 
     return (
         <div className="flex flex-col h-screen bg-gray-50">
@@ -209,7 +235,11 @@ const UserChatPage = () => {
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 bg-white border-x border-b shadow-sm overflow-y-auto p-6 space-y-4">
+                <div 
+                    ref={messagesContainerRef}
+                    onScroll={handleScroll}
+                    className="flex-1 bg-white border-x border-b shadow-sm overflow-y-auto p-6 space-y-4"
+                >
                     {messages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400">
                             <MessageCircle className="w-16 h-16 mb-4 opacity-20" />
@@ -240,7 +270,7 @@ const UserChatPage = () => {
                                         <p className="text-sm">{msg.text}</p>
                                     </div>
                                     <span className="text-[10px] text-gray-400 mt-1 mx-1">
-                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {formatTimestamp(msg.timestamp)}
                                     </span>
                                 </div>
 
