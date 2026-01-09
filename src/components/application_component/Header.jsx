@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Eye, EyeOff, Mail, Lock, User, Check, X, UserCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import {
     Dialog,
@@ -23,6 +23,18 @@ const Header = () => {
     const [email, setEmail] = useState('');
     const [role, setRole] = useState('customer'); // Default role
     const [user, setUser] = useState(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+
+    // Password requirements
+    const passwordRequirements = [
+        { label: 'At least 8 characters', test: (p) => p.length >= 8 },
+        { label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
+        { label: 'One lowercase letter', test: (p) => /[a-z]/.test(p) },
+        { label: 'One number', test: (p) => /\d/.test(p) },
+        { label: 'One special character', test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
+    ];
 
     // Generate SECRET_HASH for Cognito using crypto-js
     const generateSecretHash = (username, clientId, clientSecret) => {
@@ -127,7 +139,14 @@ const Header = () => {
             localStorage.setItem('email', email);
             localStorage.setItem('name', name);
             localStorage.setItem('role', role); // Save role to localStorage
-            navigate('/verify-email');
+            
+            // Close dialog before navigating
+            setDialogOpen(false);
+            
+            // Small delay to allow dialog to close smoothly
+            setTimeout(() => {
+                navigate('/verify-email');
+            }, 100);
         } catch (err) {
             console.error("Error during sign-up:", err);
             toast.error("Registration failed", {
@@ -208,159 +227,276 @@ const Header = () => {
                             </Button>
                         </div>
                     ) : (
-                        <Dialog>
+                        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button className="bg-[#F59E0B] text-white hover:bg-[#D97706] transition px-6 py-2 rounded-lg font-medium shadow-sm">
                                     Login
                                 </Button>
                             </DialogTrigger>
 
-                            <DialogContent className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        {activeTab === "login" ? "Login" : "Register"}
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        {activeTab === "login"
-                                            ? "Please enter your credentials to login."
-                                            : "Create a new account by filling out the details below."}
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <div className="flex space-x-4 mb-4">
-                                    <button
-                                        className={`px-4 py-2 font-medium transition-all rounded-md ${activeTab === "login" ? "bg-teal-500 text-white" : "bg-gray-200"
-                                            }`}
-                                        onClick={() => setActiveTab("login")}
-                                    >
-                                        Login
-                                    </button>
-                                    <button
-                                        className={`px-4 py-2 font-medium transition-all rounded-md ${activeTab === "register" ? "bg-teal-500 text-white" : "bg-gray-200"
-                                            }`}
-                                        onClick={() => setActiveTab("register")}
-                                    >
-                                        Register
-                                    </button>
+                            <DialogContent className="bg-white p-0 rounded-xl shadow-2xl max-w-md mx-auto overflow-hidden">
+                                {/* Header with gradient */}
+                                <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-6 text-white">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl font-bold text-white">
+                                            {activeTab === "login" ? "Welcome Back!" : "Create Account"}
+                                        </DialogTitle>
+                                        <DialogDescription className="text-teal-100 mt-1">
+                                            {activeTab === "login"
+                                                ? "Sign in to access your account"
+                                                : "Fill in the details to get started"}
+                                        </DialogDescription>
+                                    </DialogHeader>
                                 </div>
 
-                                {activeTab === "login" && (
-                                    <form className="space-y-4">
-                                        <div>
-                                            <label htmlFor="username" className="block font-medium">
-                                                Username
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="username"
-                                                className="w-full p-2 border rounded-md"
-                                                placeholder="Enter your username"
-                                                onChange={(event) => setUsername(event.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="password" className="block font-medium">
-                                                Password
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="password"
-                                                className="w-full p-2 border rounded-md"
-                                                placeholder="Enter your password"
-                                                onChange={(event) => setPassword(event.target.value)}
-                                            />
-                                        </div>
+                                <div className="p-6">
+                                    {/* Tab Buttons */}
+                                    <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
+                                        <button
+                                            className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-md text-sm ${
+                                                activeTab === "login" 
+                                                    ? "bg-white text-teal-600 shadow-sm" 
+                                                    : "text-gray-500 hover:text-gray-700"
+                                            }`}
+                                            onClick={() => setActiveTab("login")}
+                                        >
+                                            Login
+                                        </button>
+                                        <button
+                                            className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-md text-sm ${
+                                                activeTab === "register" 
+                                                    ? "bg-white text-teal-600 shadow-sm" 
+                                                    : "text-gray-500 hover:text-gray-700"
+                                            }`}
+                                            onClick={() => setActiveTab("register")}
+                                        >
+                                            Register
+                                        </button>
+                                    </div>
 
-                                        <div className="flex justify-end">
+                                    {activeTab === "login" && (
+                                        <form className="space-y-4">
+                                            {/* Username Field */}
+                                            <div>
+                                                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Username
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <User className="h-5 w-5 text-gray-400" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        id="username"
+                                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-gray-50 focus:bg-white"
+                                                        placeholder="Enter your username"
+                                                        onChange={(event) => setUsername(event.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Password Field */}
+                                            <div>
+                                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Password
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <Lock className="h-5 w-5 text-gray-400" />
+                                                    </div>
+                                                    <input
+                                                        type={showPassword ? "text" : "password"}
+                                                        id="password"
+                                                        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-gray-50 focus:bg-white"
+                                                        placeholder="Enter your password"
+                                                        onChange={(event) => setPassword(event.target.value)}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Forgot Password */}
+                                            <div className="flex justify-end">
+                                                <a href="#" className="text-sm text-teal-600 hover:text-teal-500 font-medium">
+                                                    Forgot password?
+                                                </a>
+                                            </div>
+
                                             <Button
                                                 onClick={onSubmitLogin}
-                                                className="bg-teal-500 text-white hover:bg-teal-600 transition-all px-4 py-2 rounded-md"
+                                                disabled={loading}
+                                                className="w-full bg-teal-500 text-white hover:bg-teal-600 transition-all py-2.5 rounded-lg font-medium shadow-sm disabled:opacity-50"
                                             >
-                                                Login
+                                                {loading ? (
+                                                    <span className="flex items-center justify-center gap-2">
+                                                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                        </svg>
+                                                        Signing in...
+                                                    </span>
+                                                ) : "Sign In"}
                                             </Button>
-                                        </div>
-                                    </form>
-                                )}
-                                {activeTab === "register" && (
-                                    <form className="space-y-4" onSubmit={onSubmit}>
-                                        <div>
-                                            <label htmlFor="name" className="block font-medium">
-                                                Name
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="name"
-                                                className="w-full p-2 border rounded-md"
-                                                placeholder="Enter your name"
-                                                onChange={(event) => setName(event.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="email" className="block font-medium">
-                                                Email
-                                            </label>
-                                            <input
-                                                type="email"
-                                                id="email"
-                                                className="w-full p-2 border rounded-md"
-                                                placeholder="Enter your email"
-                                                onChange={(event) => setEmail(event.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="role" className="block font-medium">
-                                                Role
-                                            </label>
-                                            <select
-                                                id="role"
-                                                className="w-full p-2 border rounded-md"
-                                                value={role}
-                                                onChange={(event) => setRole(event.target.value)}
-                                            >
-                                                <option value="customer">Customer</option>
-                                                <option value="admin">Admin</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label htmlFor="username" className="block font-medium">
-                                                Username
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="username"
-                                                className="w-full p-2 border rounded-md"
-                                                placeholder="Enter your username"
-                                                onChange={(event) => setUsername(event.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="password" className="block font-medium">
-                                                Password
-                                            </label>
-                                            <input
-                                                type="password"
-                                                id="password"
-                                                className="w-full p-2 border rounded-md"
-                                                placeholder="Enter your password"
-                                                onChange={(event) => setPassword(event.target.value)}
-                                            />
-                                            <div className="text-sm text-gray-600 mt-2">
-                                                <div>Password needs to have:</div>
-                                                <div>• At least one uppercase character</div>
-                                                <div>• At least one special character</div>
-                                                <div>• At least one number character</div>
+                                        </form>
+                                    )}
+
+                                    {activeTab === "register" && (
+                                        <form className="space-y-4" onSubmit={onSubmit}>
+                                            {/* Name Field */}
+                                            <div>
+                                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Full Name
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <User className="h-5 w-5 text-gray-400" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        id="name"
+                                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-gray-50 focus:bg-white"
+                                                        placeholder="Enter your name"
+                                                        onChange={(event) => setName(event.target.value)}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="flex justify-end">
+
+                                            {/* Email Field */}
+                                            <div>
+                                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Email Address
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <Mail className="h-5 w-5 text-gray-400" />
+                                                    </div>
+                                                    <input
+                                                        type="email"
+                                                        id="email"
+                                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-gray-50 focus:bg-white"
+                                                        placeholder="Enter your email"
+                                                        onChange={(event) => setEmail(event.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Role Field */}
+                                            <div>
+                                                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Role
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <UserCircle className="h-5 w-5 text-gray-400" />
+                                                    </div>
+                                                    <select
+                                                        id="role"
+                                                        className="w-full pl-10 pr-8 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-gray-50 focus:bg-white appearance-none cursor-pointer"
+                                                        value={role}
+                                                        onChange={(event) => setRole(event.target.value)}
+                                                    >
+                                                        <option value="customer">Customer</option>
+                                                        <option value="admin">Admin</option>
+                                                    </select>
+                                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Username Field */}
+                                            <div>
+                                                <label htmlFor="reg-username" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Username
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <User className="h-5 w-5 text-gray-400" />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        id="reg-username"
+                                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-gray-50 focus:bg-white"
+                                                        placeholder="Choose a username"
+                                                        onChange={(event) => setUsername(event.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Password Field */}
+                                            <div>
+                                                <label htmlFor="reg-password" className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                    Password
+                                                </label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <Lock className="h-5 w-5 text-gray-400" />
+                                                    </div>
+                                                    <input
+                                                        type={showPassword ? "text" : "password"}
+                                                        id="reg-password"
+                                                        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-gray-50 focus:bg-white"
+                                                        placeholder="Create a password"
+                                                        onChange={(event) => setPassword(event.target.value)}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Password Requirements */}
+                                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                                <p className="text-xs font-medium text-gray-600 mb-2">Password requirements:</p>
+                                                <div className="grid grid-cols-1 gap-1">
+                                                    {passwordRequirements.map((req, index) => {
+                                                        const isValid = req.test(password);
+                                                        return (
+                                                            <div key={index} className="flex items-center gap-2">
+                                                                {isValid ? (
+                                                                    <Check className="h-3.5 w-3.5 text-green-500" />
+                                                                ) : (
+                                                                    <X className="h-3.5 w-3.5 text-gray-300" />
+                                                                )}
+                                                                <span className={`text-xs ${isValid ? 'text-green-600' : 'text-gray-500'}`}>
+                                                                    {req.label}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
                                             <Button
                                                 type="submit"
-                                                className="bg-teal-500 text-white hover:bg-teal-600 transition-all px-4 py-2 rounded-md"
+                                                disabled={loading}
+                                                className="w-full bg-teal-500 text-white hover:bg-teal-600 transition-all py-2.5 rounded-lg font-medium shadow-sm disabled:opacity-50"
                                             >
-                                                Register
+                                                {loading ? (
+                                                    <span className="flex items-center justify-center gap-2">
+                                                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                        </svg>
+                                                        Creating account...
+                                                    </span>
+                                                ) : "Create Account"}
                                             </Button>
-                                        </div>
-                                    </form>
-                                )}
+                                        </form>
+                                    )}
+                                </div>
                             </DialogContent>
                         </Dialog>
                     )}
