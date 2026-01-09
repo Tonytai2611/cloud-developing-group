@@ -139,10 +139,10 @@ const Header = () => {
             localStorage.setItem('email', email);
             localStorage.setItem('name', name);
             localStorage.setItem('role', role); // Save role to localStorage
-            
+
             // Close dialog before navigating
             setDialogOpen(false);
-            
+
             // Small delay to allow dialog to close smoothly
             setTimeout(() => {
                 navigate('/verify-email');
@@ -215,13 +215,19 @@ const Header = () => {
                 <div className="flex items-center gap-3">
                     {user ? (
                         <div className="flex items-center gap-4">
-                            <div className="text-white text-sm">
-                                <div className="text-xs text-white/80">Welcome</div>
-                                <div onClick={onUserProfile} className="font-medium hover:underline cursor-pointer">{user.username}</div>
+                            <div className="hidden md:block bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                                <div className="text-xs text-white/80 font-medium">Welcome back</div>
+                                <div
+                                    onClick={onUserProfile}
+                                    className="font-semibold text-white hover:text-yellow-200 cursor-pointer transition-colors flex items-center gap-1.5"
+                                >
+                                    <UserCircle className="w-4 h-4" />
+                                    {user.username}
+                                </div>
                             </div>
                             <Button
                                 onClick={onLogout}
-                                className="bg-white text-teal-600 hover:bg-yellow-200 transition px-4 py-2 rounded-lg font-medium shadow-sm"
+                                className="bg-white/90 backdrop-blur-sm text-teal-700 hover:bg-white hover:scale-105 transition-all px-6 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl border border-white/50"
                             >
                                 Logout
                             </Button>
@@ -229,7 +235,7 @@ const Header = () => {
                     ) : (
                         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button className="bg-[#F59E0B] text-white hover:bg-[#D97706] transition px-6 py-2 rounded-lg font-medium shadow-sm">
+                                <Button className="bg-white/90 backdrop-blur-sm text-teal-700 hover:bg-white hover:scale-105 transition-all px-6 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl border border-white/50">
                                     Login
                                 </Button>
                             </DialogTrigger>
@@ -253,21 +259,19 @@ const Header = () => {
                                     {/* Tab Buttons */}
                                     <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
                                         <button
-                                            className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-md text-sm ${
-                                                activeTab === "login" 
-                                                    ? "bg-white text-teal-600 shadow-sm" 
+                                            className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-md text-sm ${activeTab === "login"
+                                                    ? "bg-white text-teal-600 shadow-sm"
                                                     : "text-gray-500 hover:text-gray-700"
-                                            }`}
+                                                }`}
                                             onClick={() => setActiveTab("login")}
                                         >
                                             Login
                                         </button>
                                         <button
-                                            className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-md text-sm ${
-                                                activeTab === "register" 
-                                                    ? "bg-white text-teal-600 shadow-sm" 
+                                            className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-md text-sm ${activeTab === "register"
+                                                    ? "bg-white text-teal-600 shadow-sm"
                                                     : "text-gray-500 hover:text-gray-700"
-                                            }`}
+                                                }`}
                                             onClick={() => setActiveTab("register")}
                                         >
                                             Register
