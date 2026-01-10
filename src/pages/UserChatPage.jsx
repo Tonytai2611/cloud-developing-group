@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MessageCircle, Send, ArrowLeft, Home, Bell } from "lucide-react";
+import { MessageCircle, Send, ArrowLeft, Home, Bell, Coffee, Sparkles } from "lucide-react";
 
 // Helper for notifications
 const Notification = ({ message, onClose }) => (
-    <div className="fixed top-4 right-4 bg-white border-l-4 border-teal-500 shadow-lg rounded-lg p-4 max-w-sm animate-in slide-in-from-right z-50 flex items-start gap-3">
-        <div className="bg-teal-100 p-2 rounded-full text-teal-600">
+    <div className="fixed top-4 right-4 bg-white border-l-4 border-teal-500 shadow-lg rounded-xl p-4 max-w-sm animate-in slide-in-from-right z-50 flex items-start gap-3">
+        <div className="bg-gradient-to-br from-teal-400 to-teal-600 p-2 rounded-full text-white">
             <Bell size={20} />
         </div>
         <div className="flex-1">
             <h4 className="font-bold text-gray-800 text-sm">New Message</h4>
             <p className="text-gray-600 text-sm mt-1">{message}</p>
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">×</button>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
     </div>
 );
 
@@ -58,7 +58,19 @@ const UserChatPage = () => {
                 const response = await fetch("/api/me");
                 if (response.ok) {
                     const data = await response.json();
-                    setUserEmail(data.userInfo.email || data.userInfo.username);
+                    const newUserEmail = data.userInfo?.email || data.userInfo?.username;
+                    
+                    // If user changed, clear old messages and disconnect old WebSocket
+                    if (userEmail && userEmail !== newUserEmail) {
+                        console.log('User changed from', userEmail, 'to', newUserEmail);
+                        setMessages([]); // Clear old messages
+                        if (ws) {
+                            ws.close();
+                            setWs(null);
+                        }
+                    }
+                    
+                    setUserEmail(newUserEmail);
                 } else {
                     console.error("Not authenticated");
                     navigate('/login');
@@ -75,9 +87,18 @@ const UserChatPage = () => {
     useEffect(() => {
         if (!userEmail) return; // Wait for user email to be fetched
 
+        // Close existing connection if any
+        if (ws) {
+            ws.close();
+        }
+        
+        // Clear messages for new connection
+        setMessages([]);
+
         const socket = new WebSocket(`${WS_URL}?userId=${userEmail}&role=customer`);
 
         socket.onopen = () => {
+            console.log('WebSocket connected for user:', userEmail);
             setIsConnected(true);
             setWs(socket);
 
@@ -184,127 +205,140 @@ const UserChatPage = () => {
         }
     };
 
-    // Scroll to bottom only if user was at bottom
+    // Scroll to bottom only on initial load, not on new messages
+    const isInitialLoad = useRef(true);
     useEffect(() => {
-        if (shouldAutoScroll) {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (isInitialLoad.current && messages.length > 0) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+            isInitialLoad.current = false;
         }
-    }, [messages, shouldAutoScroll]);
+    }, [messages]);
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50">
+        <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-teal-50/30">
             {/* Notification Toast */}
             {notification && (
                 <Notification message={notification} onClose={() => setNotification(null)} />
             )}
 
             {/* Header */}
-            <header className="bg-white shadow-sm p-4 flex justify-between items-center z-10">
+            <header className="bg-white/80 backdrop-blur-md shadow-sm p-4 flex justify-between items-center z-10 border-b border-gray-100">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition"
+                        className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-all px-3 py-2 rounded-lg hover:bg-teal-50"
                     >
                         <ArrowLeft size={20} /> Back
                     </button>
-                    <div className="h-6 w-px bg-gray-300"></div>
-                    <Link to="/" className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition">
+                    <div className="h-6 w-px bg-gray-200"></div>
+                    <Link to="/" className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-all px-3 py-2 rounded-lg hover:bg-teal-50">
                         <Home size={20} /> Home
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-sm text-gray-500 font-medium">
-                        {isConnected ? (adminEmail ? `Connected to ${adminEmail}` : 'Finding Admin...') : 'Disconnected'}
+                <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-full">
+                    <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                    <span className="text-sm text-gray-600 font-medium">
+                        {isConnected ? (adminEmail ? `Connected` : 'Finding Admin...') : 'Disconnected'}
                     </span>
                 </div>
             </header>
 
-            <div className="flex-1 max-w-5xl mx-auto w-full p-6 flex flex-col h-[calc(100vh-80px)]">
+            <div className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-6 flex flex-col h-[calc(100vh-80px)]">
 
-                {/* Chat Header Card */}
-                <div className="bg-white rounded-t-xl shadow-sm border-b p-4 flex items-center gap-4">
-                    <div className="bg-teal-100 p-3 rounded-full">
-                        <MessageCircle className="text-teal-600 w-6 h-6" />
-                    </div>
-                    <div>
-                        <h1 className="font-bold text-gray-800 text-lg">Chat with Admin</h1>
-                        <p className="text-sm text-gray-500">Brewcraft Restaurant Support</p>
-                    </div>
-                </div>
-
-                {/* Messages Area */}
-                <div 
-                    ref={messagesContainerRef}
-                    onScroll={handleScroll}
-                    className="flex-1 bg-white border-x border-b shadow-sm overflow-y-auto p-6 space-y-4"
-                >
-                    {messages.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                            <MessageCircle className="w-16 h-16 mb-4 opacity-20" />
-                            <p>No messages yet</p>
-                            <p className="text-sm">Start the conversation with admin!</p>
+                {/* Chat Container */}
+                <div className="flex-1 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-gray-100">
+                    
+                    {/* Chat Header */}
+                    <div className="bg-gradient-to-r from-[#14B8A6] to-[#0D9488] p-5 flex items-center gap-4">
+                        <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                            <Coffee className="text-white w-6 h-6" />
                         </div>
-                    ) : (
-                        messages.map((msg, idx) => (
-                            <div
-                                key={msg.id || idx}
-                                className={`flex items-end gap-2 ${msg.isUser ? 'justify-end' : 'justify-start'}`}
-                            >
-                                {/* Admin Avatar (Left) */}
-                                {!msg.isUser && (
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
-                                        AD
-                                    </div>
-                                )}
+                        <div className="flex-1">
+                            <h1 className="font-bold text-white text-lg">Chat with Admin</h1>
+                            <p className="text-sm text-white/70">BrewCraft Restaurant Support</p>
+                        </div>
+                        <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+                            <Sparkles className="w-4 h-4 text-white/80" />
+                            <span className="text-white/90 text-sm font-medium">Online</span>
+                        </div>
+                    </div>
 
-                                <div className={`max-w-[70%] flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
-                                    <span className="text-xs text-gray-400 mb-1 ml-1">{msg.sender}</span>
-                                    <div
-                                        className={`p-3 rounded-2xl shadow-sm ${msg.isUser
-                                            ? 'bg-teal-600 text-white rounded-br-none'
-                                            : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                                            }`}
-                                    >
-                                        <p className="text-sm">{msg.text}</p>
-                                    </div>
-                                    <span className="text-[10px] text-gray-400 mt-1 mx-1">
-                                        {formatTimestamp(msg.timestamp)}
-                                    </span>
+                    {/* Messages Area */}
+                    <div 
+                        ref={messagesContainerRef}
+                        onScroll={handleScroll}
+                        className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50/50 to-white"
+                    >
+                        {messages.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                                <div className="bg-teal-50 p-6 rounded-full mb-4">
+                                    <MessageCircle className="w-12 h-12 text-teal-300" />
                                 </div>
-
-                                {/* User Avatar (Right) */}
-                                {msg.isUser && (
-                                    <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-xs font-bold text-teal-800 flex-shrink-0">
-                                        You
-                                    </div>
-                                )}
+                                <p className="font-medium text-gray-500">No messages yet</p>
+                                <p className="text-sm text-gray-400">Start the conversation with admin!</p>
                             </div>
-                        ))
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
+                        ) : (
+                            messages.map((msg, idx) => (
+                                <div
+                                    key={msg.id || idx}
+                                    className={`flex items-end gap-3 ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    {/* Admin Avatar (Left) */}
+                                    {!msg.isUser && (
+                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-md">
+                                            AD
+                                        </div>
+                                    )}
 
-                {/* Input Area */}
-                <div className="bg-white rounded-b-xl shadow-sm border-x border-b p-4">
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                            placeholder={adminEmail ? "Type your message..." : "Waiting for admin..."}
-                            className="flex-1 border-gray-200 rounded-lg focus:ring-teal-500 focus:border-teal-500 px-4 py-2 border outline-none transition"
-                            disabled={!adminEmail}
-                        />
-                        <button
-                            onClick={sendMessage}
-                            disabled={!adminEmail || !newMessage.trim()}
-                            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Send size={18} /> Send
-                        </button>
+                                    <div className={`max-w-[70%] flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`}>
+                                        <span className="text-xs text-gray-400 mb-1 px-1">{msg.sender}</span>
+                                        <div
+                                            className={`px-4 py-3 rounded-2xl shadow-sm ${msg.isUser
+                                                ? 'bg-gradient-to-br from-[#14B8A6] to-[#0D9488] text-white rounded-br-md'
+                                                : 'bg-white text-gray-800 rounded-bl-md border border-gray-100'
+                                                }`}
+                                        >
+                                            <p className="text-sm leading-relaxed">{msg.text}</p>
+                                        </div>
+                                        <span className="text-[10px] text-gray-400 mt-1.5 px-1">
+                                            {formatTimestamp(msg.timestamp)}
+                                        </span>
+                                    </div>
+
+                                    {/* User Avatar (Right) */}
+                                    {msg.isUser && (
+                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-md">
+                                            You
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input Area */}
+                    <div className="p-4 bg-white border-t border-gray-100">
+                        <div className="flex gap-3">
+                            <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                placeholder={adminEmail ? "Type your message..." : "Waiting for admin..."}
+                                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent focus:bg-white px-4 py-3 outline-none transition-all"
+                                disabled={!adminEmail}
+                            />
+                            <button
+                                onClick={sendMessage}
+                                disabled={!adminEmail || !newMessage.trim()}
+                                className="bg-gradient-to-r from-[#14B8A6] to-[#0D9488] hover:from-[#0D9488] hover:to-[#0F766E] text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40"
+                            >
+                                <Send size={18} />
+                                <span className="hidden sm:inline">Send</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

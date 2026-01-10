@@ -34,7 +34,7 @@ const AdminChatWithUsers = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [ws, setWs] = useState(null);
-  const [adminEmail, setAdminEmail] = useState('tonytai2611@gmail.com'); // Default admin email
+  const [adminEmail, setAdminEmail] = useState(null); // Will be fetched from cookie
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,18 +65,45 @@ const AdminChatWithUsers = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  // Fetch admin email from cookie first
   useEffect(() => {
-    // 1. Connect WebSocket
+    const fetchAdminInfo = async () => {
+      try {
+        const response = await fetch("/api/me");
+        if (response.ok) {
+          const data = await response.json();
+          const email = data.userInfo?.email || data.userInfo?.username;
+          console.log('Admin email from cookie:', email);
+          setAdminEmail(email);
+        } else {
+          console.error("Not authenticated");
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error("Error fetching admin info:", error);
+        navigate('/login');
+      }
+    };
+    fetchAdminInfo();
+  }, [navigate]);
+
+  // Connect WebSocket after adminEmail is loaded
+  useEffect(() => {
+    if (!adminEmail) return; // Wait for admin email
+
     const connectWebSocket = () => {
       try {
+        console.log('Connecting WebSocket as admin:', adminEmail);
         const socket = new WebSocket(`${WS_URL}?userId=${adminEmail}&role=admin`);
 
         socket.onopen = () => {
+          console.log('WebSocket connected');
           setIsConnected(true);
           setWs(socket);
           setLoading(false);
 
           // Fetch conversation history (users who have chatted before)
+          console.log('Fetching conversations for admin:', adminEmail);
           socket.send(JSON.stringify({
             action: 'getConversations',
             adminEmail: adminEmail
@@ -91,8 +118,10 @@ const AdminChatWithUsers = () => {
 
         socket.onmessage = (event) => {
           const data = JSON.parse(event.data);
+          console.log('Received:', data.type, data);
 
           if (data.type === 'conversationList') {
+            console.log('Got conversation list:', data.conversations?.length || 0, 'conversations');
             // Load conversation history (users who have chatted before)
             const historyUsers = data.conversations.map(conv => ({
               id: conv.userId,
@@ -120,6 +149,7 @@ const AdminChatWithUsers = () => {
               return merged;
             });
           } else if (data.type === 'userList') {
+            console.log('Got user list:', data.users?.length || 0, 'online users');
             // Update online status for users
             const onlineUserEmails = data.users.map(u => u.userId);
             
@@ -217,6 +247,7 @@ const AdminChatWithUsers = () => {
         };
       } catch (error) {
         console.error("Connection failed:", error);
+        setLoading(false);
       }
     };
 
@@ -227,7 +258,7 @@ const AdminChatWithUsers = () => {
         ws.close();
       }
     };
-  }, []); // Run once on mount
+  }, [adminEmail]); // Re-run when adminEmail changes
 
   // Filter users
   const filteredUsers = users.filter(user =>
