@@ -102,7 +102,7 @@ export default function Table() {
             >
               All Tables
             </button>
-            {[2, 4, 6, 8].map(seats => (
+            {[2, 4, 6, 8, 10, 12].map(seats => (
               <button
                 key={seats}
                 onClick={() => setFilterSeats(seats.toString())}
