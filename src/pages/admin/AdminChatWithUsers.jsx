@@ -34,7 +34,7 @@ const AdminChatWithUsers = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [ws, setWs] = useState(null);
-  const [adminEmail, setAdminEmail] = useState('tonytai2611@gmail.com'); // Default admin email
+  const [adminEmail, setAdminEmail] = useState(null); // Will be fetched from cookie
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,24 +43,73 @@ const AdminChatWithUsers = () => {
   const messagesEndRef = useRef(null);
   const WS_URL = "wss://3w3qjyvvl9.execute-api.us-east-1.amazonaws.com/production";
 
+  // Format timestamp to local Vietnam time
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    // Add Z suffix if missing to ensure UTC parsing
+    let ts = timestamp;
+    if (!ts.endsWith('Z') && !ts.includes('+')) {
+      ts = ts + 'Z';
+    }
+    const date = new Date(ts);
+    return date.toLocaleTimeString('vi-VN', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+  };
+
   // Show notification helper
   const showNotification = (msg) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
   };
 
+  // Fetch admin email from cookie first
   useEffect(() => {
-    // 1. Connect WebSocket
+    const fetchAdminInfo = async () => {
+      try {
+        const response = await fetch("/api/me");
+        if (response.ok) {
+          const data = await response.json();
+          const email = data.userInfo?.email || data.userInfo?.username;
+          console.log('Admin email from cookie:', email);
+          setAdminEmail(email);
+        } else {
+          console.error("Not authenticated");
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error("Error fetching admin info:", error);
+        navigate('/login');
+      }
+    };
+    fetchAdminInfo();
+  }, [navigate]);
+
+  // Connect WebSocket after adminEmail is loaded
+  useEffect(() => {
+    if (!adminEmail) return; // Wait for admin email
+
     const connectWebSocket = () => {
       try {
+        console.log('Connecting WebSocket as admin:', adminEmail);
         const socket = new WebSocket(`${WS_URL}?userId=${adminEmail}&role=admin`);
 
         socket.onopen = () => {
+          console.log('WebSocket connected');
           setIsConnected(true);
           setWs(socket);
           setLoading(false);
 
-          // Fetch online customers immediately
+          // Fetch conversation history (users who have chatted before)
+          console.log('Fetching conversations for admin:', adminEmail);
+          socket.send(JSON.stringify({
+            action: 'getConversations',
+            adminEmail: adminEmail
+          }));
+
+          // Also fetch online customers
           socket.send(JSON.stringify({
             action: 'getUsers',
             role: 'customer'
@@ -69,19 +118,61 @@ const AdminChatWithUsers = () => {
 
         socket.onmessage = (event) => {
           const data = JSON.parse(event.data);
+          console.log('Received:', data.type, data);
 
-          if (data.type === 'userList') {
-            // Update user list from server
-            const mappedUsers = data.users.map(u => ({
-              id: u.userId,
-              name: u.userId.split('@')[0],
-              email: u.userId,
-              avatar: u.userId.charAt(0).toUpperCase(),
-              status: 'Online',
-              unread: 0,
-              lastMessage: 'Online now'
+          if (data.type === 'conversationList') {
+            console.log('Got conversation list:', data.conversations?.length || 0, 'conversations');
+            // Load conversation history (users who have chatted before)
+            const historyUsers = data.conversations.map(conv => ({
+              id: conv.userId,
+              name: conv.userId.split('@')[0],
+              email: conv.userId,
+              avatar: conv.userId.charAt(0).toUpperCase(),
+              status: 'Offline', // Will be updated by userList
+              unread: conv.unread || 0,
+              lastMessage: conv.lastMessage || 'No messages',
+              lastTimestamp: conv.lastTimestamp
             }));
-            setUsers(mappedUsers);
+            
+            setUsers(prevUsers => {
+              // Merge with existing online users
+              const merged = [...historyUsers];
+              prevUsers.forEach(onlineUser => {
+                const existingIndex = merged.findIndex(u => u.email === onlineUser.email);
+                if (existingIndex !== -1) {
+                  // Update status to Online
+                  merged[existingIndex] = { ...merged[existingIndex], status: 'Online' };
+                } else {
+                  merged.push(onlineUser);
+                }
+              });
+              return merged;
+            });
+          } else if (data.type === 'userList') {
+            console.log('Got user list:', data.users?.length || 0, 'online users');
+            // Update online status for users
+            const onlineUserEmails = data.users.map(u => u.userId);
+            
+            setUsers(prevUsers => {
+              if (prevUsers.length === 0) {
+                // If no history, just show online users
+                return data.users.map(u => ({
+                  id: u.userId,
+                  name: u.userId.split('@')[0],
+                  email: u.userId,
+                  avatar: u.userId.charAt(0).toUpperCase(),
+                  status: 'Online',
+                  unread: 0,
+                  lastMessage: 'Online now'
+                }));
+              }
+              
+              // Update online status for existing users
+              return prevUsers.map(user => ({
+                ...user,
+                status: onlineUserEmails.includes(user.email) ? 'Online' : 'Offline'
+              }));
+            });
           } else if (data.type === 'messageHistory') {
             const formattedMessages = data.messages.map(msg => ({
               id: msg.messageId,
@@ -128,19 +219,22 @@ const AdminChatWithUsers = () => {
             });
 
             // 2. Update Messages (Chat Area) if we are chatting with this user
-            // Check against current 'selectedUser' state? 
-            // Since we can't easily access the fresh 'selectedUser' state inside this callback without refs,
-            // we will just append to 'messages'. 
-            // Note: If the admin switches user, 'messages' will be cleared/reloaded by the useEffect anyway.
-            setMessages(prev => [...prev, {
-              id: data.messageId,
-              text: data.message,
-              sender: isAdminMsg ? 'You' : 'User',
-              timestamp: data.timestamp,
-              isAdmin: isAdminMsg,
-              senderName: isAdminMsg ? 'Admin' : (data.senderId.split('@')[0]),
-              avatar: isAdminMsg ? 'AD' : data.senderId.charAt(0).toUpperCase()
-            }]);
+            // Check for duplicates by messageId before adding
+            setMessages(prev => {
+              // Check if message already exists
+              const exists = prev.some(m => m.id === data.messageId);
+              if (exists) return prev;
+              
+              return [...prev, {
+                id: data.messageId,
+                text: data.message,
+                sender: isAdminMsg ? 'You' : 'User',
+                timestamp: data.timestamp,
+                isAdmin: isAdminMsg,
+                senderName: isAdminMsg ? 'Admin' : (data.senderId.split('@')[0]),
+                avatar: isAdminMsg ? 'AD' : data.senderId.charAt(0).toUpperCase()
+              }];
+            });
 
             if (!isAdminMsg) {
               showNotification(`New message from ${data.senderId}`);
@@ -153,6 +247,7 @@ const AdminChatWithUsers = () => {
         };
       } catch (error) {
         console.error("Connection failed:", error);
+        setLoading(false);
       }
     };
 
@@ -163,7 +258,7 @@ const AdminChatWithUsers = () => {
         ws.close();
       }
     };
-  }, []); // Run once on mount
+  }, [adminEmail]); // Re-run when adminEmail changes
 
   // Filter users
   const filteredUsers = users.filter(user =>
@@ -195,25 +290,29 @@ const AdminChatWithUsers = () => {
     };
 
     ws.send(JSON.stringify(messageData));
-
-    // Optimistic update: Show message immediately
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      text: newMessage,
-      sender: 'You',
-      timestamp: new Date().toISOString(),
-      isAdmin: true,
-      senderName: 'Admin',
-      avatar: 'AD'
-    }]);
-
     setNewMessage("");
+    // Message will be added when server broadcasts back via newMessage event
   };
 
-  // Scroll to bottom
+  // Scroll to bottom only when user sends a message or first load
+  const messagesContainerRef = useRef(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  // Check if user is at bottom of chat
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+      setShouldAutoScroll(isAtBottom);
+    }
+  };
+
+  // Scroll to bottom only if user was at bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, shouldAutoScroll]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -344,7 +443,11 @@ const AdminChatWithUsers = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+                <div 
+                  ref={messagesContainerRef}
+                  onScroll={handleScroll}
+                  className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50"
+                >
                   {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400">
                       <p className="text-sm">No messages yet. Start the conversation!</p>
@@ -368,7 +471,7 @@ const AdminChatWithUsers = () => {
                               {msg.senderName}
                             </span>
                             <span className="text-[10px] text-gray-400">
-                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {formatTimestamp(msg.timestamp)}
                             </span>
                           </div>
 

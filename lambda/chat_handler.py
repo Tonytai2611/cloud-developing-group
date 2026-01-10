@@ -42,6 +42,8 @@ def lambda_handler(event, context):
             return handle_get_messages(event, connection_id)
         elif route_key == 'getUsers':
             return handle_get_users(event, connection_id)
+        elif route_key == 'getConversations':
+            return handle_get_conversations(event, connection_id)
         else:
             return {'statusCode': 400, 'body': 'Unknown route'}
             
@@ -69,7 +71,7 @@ def handle_connect(event, connection_id):
             'connectionId': connection_id,
             'userId': user_id,
             'role': role,
-            'connectedAt': datetime.utcnow().isoformat()
+            'connectedAt': datetime.utcnow().isoformat() + 'Z'  # Add Z to indicate UTC timezone
         }
     )
     
@@ -109,7 +111,7 @@ def handle_send_message(event, connection_id):
     
     # Save message to database
     message_id = str(uuid.uuid4())
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.utcnow().isoformat() + 'Z'  # Add Z to indicate UTC timezone
     
     try:
         messages_table.put_item(
@@ -124,15 +126,19 @@ def handle_send_message(event, connection_id):
             }
         )
     except Exception as e:
-        print(f"❌ Error saving message: {str(e)}")
+        print(f" Error saving message: {str(e)}")
         raise
 
     
-    # Find recipient's connection
+    # Find recipient's connection AND sender's connection (to confirm message sent)
     try:
+        # Get all connections for both recipient and sender
         response = connections_table.scan(
-            FilterExpression='userId = :userId',
-            ExpressionAttributeValues={':userId': recipient_id}
+            FilterExpression='userId = :recipientId OR userId = :senderId',
+            ExpressionAttributeValues={
+                ':recipientId': recipient_id,
+                ':senderId': sender_id
+            }
         )
         
         items = response.get('Items', [])
@@ -140,28 +146,38 @@ def handle_send_message(event, connection_id):
         # Get API Gateway client
         apigw_client = get_apigw_client(event)
         
-        if items:
-            # Send to all recipient's connections (in case multiple devices)
-            for item in items:
-                recipient_connection_id = item['connectionId']
-                
-                try:
-                    apigw_client.post_to_connection(
-                        ConnectionId=recipient_connection_id,
-                        Data=json.dumps({
-                            'type': 'newMessage',
-                            'messageId': message_id,
-                            'senderId': sender_id,
-                            'message': message,
-                            'timestamp': timestamp
-                        }).encode('utf-8')
-                    )
-                except Exception as send_error:
-                    print(f"⚠️ Failed to send to {recipient_connection_id}: {str(send_error)}")
-                    # Connection might be stale, remove it
-                    connections_table.delete_item(
-                        Key={'connectionId': recipient_connection_id}
-                    )
+        # Track which connectionIds we've already sent to (avoid duplicates)
+        sent_connections = set()
+        
+        for item in items:
+            target_connection_id = item['connectionId']
+            
+            # Skip if we've already sent to this connection
+            if target_connection_id in sent_connections:
+                continue
+            
+            # Skip the connection that sent the message (they will add it optimistically or via broadcast)
+            # Actually, we WANT to send back to sender so they get server timestamp
+            
+            try:
+                apigw_client.post_to_connection(
+                    ConnectionId=target_connection_id,
+                    Data=json.dumps({
+                        'type': 'newMessage',
+                        'messageId': message_id,
+                        'senderId': sender_id,
+                        'recipientId': recipient_id,
+                        'message': message,
+                        'timestamp': timestamp
+                    }).encode('utf-8')
+                )
+                sent_connections.add(target_connection_id)
+            except Exception as send_error:
+                print(f"⚠️ Failed to send to {target_connection_id}: {str(send_error)}")
+                # Connection might be stale, remove it
+                connections_table.delete_item(
+                    Key={'connectionId': target_connection_id}
+                )
     except Exception as e:
         print(f"❌ Error sending message: {str(e)}")
     
@@ -275,3 +291,77 @@ def decimal_to_native(obj):
         return int(obj) if obj % 1 == 0 else float(obj)
     else:
         return obj
+
+def handle_get_conversations(event, connection_id):
+    """
+    Handle fetching all conversations for admin
+    Returns list of unique users who have chatted with admin
+    """
+    body = json.loads(event.get('body', '{}'))
+    admin_email = body.get('adminEmail')
+    
+    if not admin_email:
+        return {'statusCode': 400, 'body': 'Missing adminEmail'}
+    
+    # Scan messages table to find all conversations involving admin
+    response = messages_table.scan()
+    all_messages = response.get('Items', [])
+    
+    # Handle pagination if there are more items
+    while 'LastEvaluatedKey' in response:
+        response = messages_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+        all_messages.extend(response.get('Items', []))
+    
+    # Extract unique users who chatted with admin
+    conversations = {}
+    for msg in all_messages:
+        sender = msg.get('senderId', '')
+        recipient = msg.get('recipientId', '')
+        timestamp = msg.get('timestamp', '')
+        message = msg.get('message', '')
+        
+        # Find the other user (not admin)
+        other_user = None
+        if sender == admin_email:
+            other_user = recipient
+        elif recipient == admin_email:
+            other_user = sender
+        
+        if other_user and other_user != admin_email:
+            # Update or add to conversations
+            if other_user not in conversations:
+                conversations[other_user] = {
+                    'userId': other_user,
+                    'lastMessage': message,
+                    'lastTimestamp': timestamp,
+                    'unread': 0
+                }
+            else:
+                # Update if this message is newer
+                if timestamp > conversations[other_user]['lastTimestamp']:
+                    conversations[other_user]['lastMessage'] = message
+                    conversations[other_user]['lastTimestamp'] = timestamp
+    
+    # Sort by last timestamp (most recent first)
+    conversation_list = sorted(
+        conversations.values(), 
+        key=lambda x: x['lastTimestamp'], 
+        reverse=True
+    )
+    
+    # Convert to native types
+    conversation_list = decimal_to_native(conversation_list)
+    
+    apigw_client = get_apigw_client(event)
+    try:
+        apigw_client.post_to_connection(
+            ConnectionId=connection_id,
+            Data=json.dumps({
+                'type': 'conversationList',
+                'conversations': conversation_list
+            }).encode('utf-8')
+        )
+    except Exception as e:
+        print(f"❌ Error sending conversation list: {str(e)}")
+        
+    return {'statusCode': 200, 'body': json.dumps({'count': len(conversation_list)})}

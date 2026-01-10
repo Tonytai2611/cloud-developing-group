@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { menuApi } from '../../services/menuApi';
-import { Plus, Edit2, Trash2, Search, X, ArrowLeft, Home } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, ArrowLeft, Home, Grid, List, Coffee } from 'lucide-react';
+import AnimatedList from '../../components/ui/AnimatedList';
 
 export default function AdminManageMenu() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function AdminManageMenu() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -149,94 +151,181 @@ export default function AdminManageMenu() {
           </button>
         </div>
 
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
+        {/* Search and View Toggle */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Search dishes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
             />
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-md transition-all ${
+                viewMode === 'grid' 
+                  ? 'bg-white text-teal-600 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="Grid View"
+            >
+              <Grid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-md transition-all ${
+                viewMode === 'list' 
+                  ? 'bg-white text-teal-600 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="List View"
+            >
+              <List className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-teal-500 text-white">
-              <tr>
-                <th className="px-6 py-4 text-left">Image</th>
-                <th className="px-6 py-4 text-left">Dish Name</th>
-                <th className="px-6 py-4 text-left">Price</th>
-                <th className="px-6 py-4 text-left">Category</th>
-                <th className="px-6 py-4 text-left">Status</th>
-                <th className="px-6 py-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMenu.map((item, index) => (
-                <tr key={item.id} className={`border-b hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="px-6 py-4">
+        {/* Animated Menu Items */}
+        {filteredMenu.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+            <Coffee className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
+            <p className="text-gray-400">Try adjusting your search or add a new dish</p>
+          </div>
+        ) : (
+          <AnimatedList
+            items={filteredMenu}
+            onItemSelect={(item) => handleOpenModal(item)}
+            showGradients={true}
+            enableArrowNavigation={true}
+            displayScrollbar={true}
+            maxHeight="calc(100vh - 350px)"
+            gradientColors={{ from: '#f9fafb', to: 'transparent' }}
+            renderItem={(item, index, isSelected) => (
+              <div 
+                className={`bg-white rounded-xl border-2 transition-all duration-200 overflow-hidden ${
+                  isSelected 
+                    ? 'border-teal-500 shadow-xl shadow-teal-500/10' 
+                    : 'border-gray-100 hover:border-teal-300 shadow-sm hover:shadow-md'
+                }`}
+              >
+                {viewMode === 'grid' ? (
+                  // Grid View - Card Style
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Image */}
+                    <div className="relative sm:w-48 h-40 sm:h-auto flex-shrink-0">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-semibold ${
+                        item.available 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-red-500 text-white'
+                      }`}>
+                        {item.available ? 'Available' : 'Out of Stock'}
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800">{item.name}</h3>
+                            <span className="inline-block bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full text-xs font-medium mt-1">
+                              {item.category}
+                            </span>
+                          </div>
+                          <span className="text-xl font-bold text-teal-600">
+                            ${(item.price / 1000).toFixed(2)}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 text-sm line-clamp-2">{item.description}</p>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenModal(item);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-medium text-sm"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item.id);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all font-medium text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // List View - Compact Style
+                  <div className="flex items-center p-3 gap-4">
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-16 h-16 rounded-lg object-cover"
+                      className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
                     />
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="font-semibold text-gray-800">{item.name}</p>
-                    <p className="text-sm text-gray-600 line-clamp-1">{item.description}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-bold text-teal-600">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-800 truncate">{item.name}</h3>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                          item.available 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {item.available ? 'Available' : 'Out'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">{item.category}</p>
+                    </div>
+                    <span className="text-lg font-bold text-teal-600 flex-shrink-0">
                       ${(item.price / 1000).toFixed(2)}
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                      {item.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${item.available
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                      }`}>
-                      {item.available ? 'Available' : 'Out of Stock'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
-                        onClick={() => handleOpenModal(item)}
-                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
-                        title="Edit"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal(item);
+                        }}
+                        className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all"
                       >
-                        <Edit2 className="w-5 h-5" />
+                        <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
-                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
-                        title="Delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item.id);
+                        }}
+                        className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {filteredMenu.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              No dishes found
-            </div>
-          )}
-        </div>
+                  </div>
+                )}
+              </div>
+            )}
+          />
+        )}
       </div>
 
       {/* Modal */}
