@@ -244,27 +244,39 @@ Resources:
               
               cat > server.js << 'EOFJS'
               const express = require('express');
+              const path = require('path');
               const app = express();
               const port = 3000;
               
-              app.use(express.static('build'));
+              // Serve static files from React build
+              app.use(express.static(path.join(__dirname, 'build')));
               
+              // Health check endpoint for ALB
               app.get('/health', (req, res) => {
-                res.status(200).json({ status: 'healthy' });
+                res.status(200).json({ 
+                  status: 'healthy',
+                  timestamp: new Date().toISOString()
+                });
               });
               
+              // Serve React app for all other routes (SPA fallback)
               app.get('*', (req, res) => {
-                res.send('<!DOCTYPE html><html><head><title>BrewCraft</title><style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white}.container{text-align:center;padding:2rem;background:rgba(255,255,255,0.1);border-radius:10px;backdrop-filter:blur(10px)}h1{font-size:3rem;margin-bottom:1rem}p{font-size:1.2rem}</style></head><body><div class="container"><h1>🍺 BrewCraft</h1><p>Welcome to BrewCraft Restaurant & Cafe</p><p>Instance: ${AWS::StackName}</p><p>Region: ${AWS::Region}</p></div></body></html>');
+                const indexPath = path.join(__dirname, 'build', 'index.html');
+                res.sendFile(indexPath, (err) => {
+                  if (err) {
+                    res.status(500).send('Application not deployed yet. Please upload React build files.');
+                  }
+                });
               });
               
               app.listen(port, '0.0.0.0', () => {
-                console.log('BrewCraft app listening on port ' + port);
+                console.log('BrewCraft server listening on port ' + port);
               });
               EOFJS
               
               cat > package.json << 'EOFJSON'
               {
-                "name": "brewcraft",
+                "name": "brewcraft-server",
                 "version": "1.0.0",
                 "main": "server.js",
                 "dependencies": {
@@ -274,6 +286,34 @@ Resources:
               EOFJSON
               
               npm install
+              
+              # Create placeholder index.html
+              mkdir -p build
+              cat > build/index.html << 'EOFHTML'
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>BrewCraft - Deploying</title>
+                <style>
+                  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;justify-content:center;align-items:center;height:100vh;color:white}
+                  .container{text-align:center;padding:3rem;background:rgba(255,255,255,0.1);border-radius:20px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(31,38,135,0.37)}
+                  h1{font-size:3rem;margin-bottom:1rem}p{font-size:1.2rem;line-height:1.6}
+                  .spinner{border:4px solid rgba(255,255,255,0.3);border-top:4px solid white;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:2rem auto}
+                  @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <h1>☕ BrewCraft</h1>
+                  <div class="spinner"></div>
+                  <p>Infrastructure ready!</p>
+                  <p>Waiting for React application deployment...</p>
+                </div>
+              </body>
+              </html>
+              EOFHTML
               
               cat > /etc/systemd/system/brewcraft.service << 'EOFSVC'
               [Unit]
@@ -444,7 +484,7 @@ Resources:
       Failover: SECONDARY
       AliasTarget:
         HostedZoneId: Z3AQBSTGFYJSTF
-        DNSName: !Sub 's3-website-${AWS::Region}.amazonaws.com'
+        DNSName: !Sub '${FailoverBucket}.s3-website-${AWS::Region}.amazonaws.com'
         EvaluateTargetHealth: false
 
   VisitorsTable:

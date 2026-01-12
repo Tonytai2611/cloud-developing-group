@@ -7,7 +7,7 @@ set -e
 
 STACK_NAME="brewcraft-infrastructure"
 TEMPLATE_FILE="main-infrastructure.yaml"
-PARAMETERS_FILE="parameters.yaml"
+PARAMETERS_FILE="parameters.json"
 
 # Colors for output
 RED='\033[0;31m'
@@ -67,8 +67,7 @@ else
     aws cloudformation create-stack \
         --stack-name $STACK_NAME \
         --template-body file://$TEMPLATE_FILE \
-        --parameters file://$PARAMETERS_FILE \
-        --capabilities CAPABILITY_IAM
+        --parameters file://$PARAMETERS_FILE
     
     echo ""
     echo -e "${YELLOW}Waiting for stack creation to complete (this may take 15-25 minutes)...${NC}"
