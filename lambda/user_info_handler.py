@@ -31,7 +31,7 @@ def lambda_handler(event, context):
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-        'Access-Control-Allow-Methods': 'GET,OPTIONS'
+        'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS'
     }
     
     # Handle OPTIONS request for CORS
@@ -43,20 +43,32 @@ def lambda_handler(event, context):
         }
     
     try:
-        # Get access token from Authorization header
-        auth_header = event.get('headers', {}).get('Authorization', '')
+        # Get access token from Authorization header (Case Insensitive)
+        headers_incoming = event.get('headers', {})
+        # Normalize keys to lowercase
+        headers_dict = {k.lower(): v for k, v in headers_incoming.items()}
+        auth_header = headers_dict.get('authorization', '')
         
-        if not auth_header.startswith('Bearer '):
+        print(f"DEBUG: Headers received: {json.dumps(headers_incoming)}")
+        print(f"DEBUG: Auth Header found: {auth_header[:20]}...")
+        
+        if not auth_header.lower().startswith('bearer '):
+            print("❌ Missing or invalid authorization header format")
             return {
                 'statusCode': 401,
                 'headers': headers,
                 'body': json.dumps({'error': 'Missing or invalid authorization header'})
             }
         
-        access_token = auth_header.replace('Bearer ', '')
+        access_token = auth_header.split(' ')[1]
         
         # Get user info from Cognito
-        user_info = cognito.get_user(AccessToken=access_token)
+        try:
+            user_info = cognito.get_user(AccessToken=access_token)
+        except Exception as cognito_err:
+            print(f"❌ Cognito get_user failed: {str(cognito_err)}")
+            raise cognito_err
+
         
         # Extract username and attributes
         username = user_info['Username']
@@ -69,6 +81,65 @@ def lambda_handler(event, context):
         
         # Get additional user data from DynamoDB
         table = dynamodb.Table(USERS_TABLE)
+
+        # --- HANDLE PUT (UPDATE) ---
+        http_method = event.get('httpMethod') or event.get('requestContext', {}).get('http', {}).get('method', 'GET')
+        if http_method == 'PUT':
+            try:
+                body = json.loads(event.get('body', '{}'))
+                name = body.get('name')
+                email = body.get('email')
+                
+                update_expr = []
+                expr_names = {}
+                expr_values = {}
+                
+                if name:
+                    update_expr.append('#n = :n')
+                    expr_names['#n'] = 'name'
+                    expr_values[':n'] = name
+                if email:
+                    update_expr.append('#e = :e')
+                    expr_names['#e'] = 'email'
+                    expr_values[':e'] = email
+                
+                if not update_expr:
+                    return {
+                        'statusCode': 400,
+                        'headers': headers,
+                        'body': json.dumps({'error': 'No fields to update'})
+                    }
+                
+                # Update DynamoDB
+                # Key must match schema: 'id' is the partition key
+                upd_resp = table.update_item(
+                    Key={'id': username},
+                    UpdateExpression='SET ' + ', '.join(update_expr),
+                    ExpressionAttributeNames=expr_names,
+                    ExpressionAttributeValues=expr_values,
+                    ReturnValues='ALL_NEW'
+                )
+                
+                updated_item = decimal_to_native(upd_resp.get('Attributes', {}))
+                
+                # Check admin for response
+                db_role = updated_item.get('role')
+                final_role = db_role or attributes.get('custom:role') or 'customer'
+                updated_item['isAdmin'] = (final_role == 'admin')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': headers,
+                    'body': json.dumps({'message': 'Profile updated', 'userInfo': updated_item})
+                }
+                
+            except Exception as e:
+                print(f"❌ Update failed: {str(e)}")
+                return {
+                    'statusCode': 500,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Failed to update profile', 'details': str(e)})
+                }
         try:
             # Table uses 'id' as Partition Key, which stores the username
             db_response = table.get_item(Key={'id': username})
