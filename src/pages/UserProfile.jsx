@@ -13,23 +13,29 @@ export default function UserProfile() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      // Create a timeout promise
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out - Server may be hanging')), 5000)
-      );
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Not authenticated. Please login again.');
+      }
 
-      const res = await Promise.race([
-        fetch('/api/user'),
-        timeout
-      ]);
+      const API_URL = process.env.VITE_API_GATEWAY_URL || 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
 
-      if (res.status === 404) throw new Error('User profile not found in Database. (Did you complete registration?)');
-      if (res.status === 401) throw new Error('Not authenticated. Please login again.');
+      const res = await fetch(`${API_URL}/api/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 401) throw new Error('Session expired. Please login again.');
       if (!res.ok) throw new Error(`Server Error: ${res.statusText}`);
 
       const data = await res.json();
-      setProfile(data.item);
+      // API returns { userInfo: ... } not { item: ... }
+      setProfile(data.userInfo);
     } catch (e) {
+      if (e.message.includes('Not authenticated')) {
+        navigate('/login');
+      }
       setError(e.message || 'Failed to fetch profile');
     } finally {
       setLoading(false);
@@ -43,14 +49,25 @@ export default function UserProfile() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch('/api/user', {
+      const token = localStorage.getItem('accessToken');
+      const API_URL = process.env.VITE_API_GATEWAY_URL || 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+
+      // Note: Currently pointing to /api/me for update, assuming handler supports PUT or similar
+      // If not, this might need to be adjusted to a specific update endpoint
+      const res = await fetch(`${API_URL}/api/me`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ name: profile.name, email: profile.email })
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
-      setProfile(data.item);
+
+      // Update local state with returned data
+      setProfile(data.userInfo || profile);
       toast.success("Profile saved successfully");
     } catch (e) {
       setError(e.message || 'Save failed');
