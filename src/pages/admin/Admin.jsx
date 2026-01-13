@@ -16,9 +16,12 @@ import {
   CheckCircle2,
   XCircle
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function Admin() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
@@ -34,31 +37,20 @@ export default function Admin() {
     newUsers: 89
   });
 
+  // Get user info from AuthProvider
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const response = await fetch("/api/me");
-        if (response.ok) {
-          const userInfo = await response.json();
-          setData(userInfo.userInfo);
-
-          if (!userInfo.userInfo?.isAdmin) {
-            navigate('/');
-          }
-        } else {
-          setData(null);
+    if (!authLoading) {
+      if (user) {
+        setData(user);
+        if (!user.isAdmin && user.role !== 'admin') {
           navigate('/');
         }
-      } catch (error) {
-        console.error("Error fetching user info:", error);
+      } else {
         navigate('/');
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchUserInfo();
-  }, [navigate]);
+      setLoading(false);
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubscribe = async () => {
     if (!email) {
@@ -240,8 +232,8 @@ export default function Admin() {
 
           {message && (
             <div className={`mt-4 p-4 rounded-xl flex items-center gap-3 ${message.includes('successful')
-                ? 'bg-emerald-50 border border-emerald-200'
-                : 'bg-red-50 border border-red-200'
+              ? 'bg-emerald-50 border border-emerald-200'
+              : 'bg-red-50 border border-red-200'
               }`}>
               {message.includes('successful') ? (
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
