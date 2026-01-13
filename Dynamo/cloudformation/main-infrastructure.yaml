@@ -234,62 +234,40 @@ Resources:
               #!/bin/bash
               set -e
               
-              dnf update -y
+              # Update system
+              yum update -y
               
-              curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-              dnf install -y nodejs git
+              # Install Docker
+              yum install -y docker
+              systemctl start docker
+              systemctl enable docker
+              usermod -aG docker ec2-user
               
-              mkdir -p /opt/brewcraft
-              cd /opt/brewcraft
+              # Install AWS CLI v2
+              curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip -q awscliv2.zip
+              ./aws/install
+              rm -rf aws awscliv2.zip
               
-              cat > server.js << 'EOFJS'
-              const express = require('express');
-              const path = require('path');
-              const app = express();
-              const port = 3000;
+              # Set AWS region
+              export AWS_DEFAULT_REGION=${AWS::Region}
               
-              // Serve static files from React build
-              app.use(express.static(path.join(__dirname, 'build')));
+              # Get AWS Account ID
+              AWS_ACCOUNT_ID=${AWS::AccountId}
+              ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.${AWS::Region}.amazonaws.com"
+              ECR_REPO="brewcraft-frontend"
+              IMAGE_TAG="latest"
               
-              // Health check endpoint for ALB
-              app.get('/health', (req, res) => {
-                res.status(200).json({ 
-                  status: 'healthy',
-                  timestamp: new Date().toISOString()
-                });
-              });
+              # Login to ECR
+              aws ecr get-login-password --region ${AWS::Region} | \
+                docker login --username AWS --password-stdin $ECR_REGISTRY
               
-              // Serve React app for all other routes (SPA fallback)
-              app.get('*', (req, res) => {
-                const indexPath = path.join(__dirname, 'build', 'index.html');
-                res.sendFile(indexPath, (err) => {
-                  if (err) {
-                    res.status(500).send('Application not deployed yet. Please upload React build files.');
-                  }
-                });
-              });
-              
-              app.listen(port, '0.0.0.0', () => {
-                console.log('BrewCraft server listening on port ' + port);
-              });
-              EOFJS
-              
-              cat > package.json << 'EOFJSON'
-              {
-                "name": "brewcraft-server",
-                "version": "1.0.0",
-                "main": "server.js",
-                "dependencies": {
-                  "express": "^4.18.2"
-                }
-              }
-              EOFJSON
-              
-              npm install
-              
-              # Create placeholder index.html
-              mkdir -p build
-              cat > build/index.html << 'EOFHTML'
+              # Pull the image from ECR
+              docker pull $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG || {
+                echo "Failed to pull image from ECR. Creating placeholder..."
+                # If ECR image doesn't exist, create a simple nginx placeholder
+                mkdir -p /tmp/placeholder
+                cat > /tmp/placeholder/index.html << 'EOFHTML'
               <!DOCTYPE html>
               <html lang="en">
               <head>
@@ -309,33 +287,49 @@ Resources:
                   <h1>☕ BrewCraft</h1>
                   <div class="spinner"></div>
                   <p>Infrastructure ready!</p>
-                  <p>Waiting for React application deployment...</p>
+                  <p>Waiting for Docker image deployment...</p>
+                  <p style="font-size:0.9rem;margin-top:2rem">Push your image to ECR to deploy</p>
                 </div>
               </body>
               </html>
               EOFHTML
+                docker run -d --name brewcraft-app --restart unless-stopped -p 3000:80 -v /tmp/placeholder:/usr/share/nginx/html nginx:alpine
+                exit 0
+              }
               
-              cat > /etc/systemd/system/brewcraft.service << 'EOFSVC'
+              # Stop any existing container
+              docker stop brewcraft-app 2>/dev/null || true
+              docker rm brewcraft-app 2>/dev/null || true
+              
+              # Run the container from ECR
+              docker run -d \
+                --name brewcraft-app \
+                --restart unless-stopped \
+                -p 3000:80 \
+                $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+              
+              # Create a systemd service to ensure container runs on reboot
+              cat > /etc/systemd/system/brewcraft-docker.service << 'EOFSVC'
               [Unit]
-              Description=BrewCraft Application
-              After=network.target
+              Description=BrewCraft Docker Container
+              After=docker.service
+              Requires=docker.service
               
               [Service]
-              Type=simple
-              User=root
-              WorkingDirectory=/opt/brewcraft
-              ExecStart=/usr/bin/node server.js
-              Restart=always
-              RestartSec=10
-              Environment=NODE_ENV=production
+              Type=oneshot
+              RemainAfterExit=yes
+              ExecStart=/usr/bin/docker start brewcraft-app
+              ExecStop=/usr/bin/docker stop brewcraft-app
               
               [Install]
               WantedBy=multi-user.target
               EOFSVC
               
               systemctl daemon-reload
-              systemctl enable brewcraft
-              systemctl start brewcraft
+              systemctl enable brewcraft-docker.service
+              
+              # Cleanup old images periodically
+              (crontab -l 2>/dev/null; echo "0 2 * * * docker image prune -af") | crontab -
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -487,186 +481,8 @@ Resources:
         DNSName: !Sub '${FailoverBucket}.s3-website-${AWS::Region}.amazonaws.com'
         EvaluateTargetHealth: false
 
-  VisitorsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'RestaurantApp-Visitors-${EnvironmentName}'
-      BillingMode: PROVISIONED
-      AttributeDefinitions:
-        - AttributeName: visitorId
-          AttributeType: S
-        - AttributeName: visitTimestamp
-          AttributeType: N
-      KeySchema:
-        - AttributeName: visitorId
-          KeyType: HASH
-        - AttributeName: visitTimestamp
-          KeyType: RANGE
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-      TimeToLiveSpecification:
-        Enabled: true
-        AttributeName: ttl
-      Tags:
-        - Key: Name
-          Value: !Sub 'RestaurantApp-Visitors-${EnvironmentName}'
-
-  ContentTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'RestaurantApp-Content-${EnvironmentName}'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: pageId
-          AttributeType: S
-        - AttributeName: category
-          AttributeType: S
-      KeySchema:
-        - AttributeName: pageId
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: CategoryIndex
-          KeySchema:
-            - AttributeName: category
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-      Tags:
-        - Key: Name
-          Value: !Sub 'RestaurantApp-Content-${EnvironmentName}'
-
-  SessionsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'RestaurantApp-Sessions-${EnvironmentName}'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: sessionId
-          AttributeType: S
-        - AttributeName: userId
-          AttributeType: S
-      KeySchema:
-        - AttributeName: sessionId
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: UserIndex
-          KeySchema:
-            - AttributeName: userId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-      TimeToLiveSpecification:
-        Enabled: true
-        AttributeName: expiresAt
-      Tags:
-        - Key: Name
-          Value: !Sub 'RestaurantApp-Sessions-${EnvironmentName}'
-
-  MenuTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'RestaurantApp-Menu-${EnvironmentName}'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: itemId
-          AttributeType: S
-        - AttributeName: category
-          AttributeType: S
-      KeySchema:
-        - AttributeName: itemId
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: CategoryIndex
-          KeySchema:
-            - AttributeName: category
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-      Tags:
-        - Key: Name
-          Value: !Sub 'RestaurantApp-Menu-${EnvironmentName}'
-
-  BookingsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'RestaurantApp-Bookings-${EnvironmentName}'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: bookingId
-          AttributeType: S
-        - AttributeName: userId
-          AttributeType: S
-        - AttributeName: bookingDate
-          AttributeType: S
-      KeySchema:
-        - AttributeName: bookingId
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: UserIndex
-          KeySchema:
-            - AttributeName: userId
-              KeyType: HASH
-            - AttributeName: bookingDate
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
-        - IndexName: DateIndex
-          KeySchema:
-            - AttributeName: bookingDate
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-      Tags:
-        - Key: Name
-          Value: !Sub 'RestaurantApp-Bookings-${EnvironmentName}'
-
-  TablesTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'RestaurantApp-Tables-${EnvironmentName}'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: tableId
-          AttributeType: S
-      KeySchema:
-        - AttributeName: tableId
-          KeyType: HASH
-      Tags:
-        - Key: Name
-          Value: !Sub 'RestaurantApp-Tables-${EnvironmentName}'
-
-  OrdersTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub 'RestaurantApp-Orders-${EnvironmentName}'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: orderId
-          AttributeType: S
-        - AttributeName: userId
-          AttributeType: S
-        - AttributeName: status
-          AttributeType: S
-      KeySchema:
-        - AttributeName: orderId
-          KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: UserIndex
-          KeySchema:
-            - AttributeName: userId
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: StatusIndex
-          KeySchema:
-            - AttributeName: status
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-      Tags:
-        - Key: Name
-          Value: !Sub 'RestaurantApp-Orders-${EnvironmentName}'
+  # DynamoDB tables are managed separately via Lambda deployment
+  # They already exist and don't need to be created by this stack
 
 Outputs:
   WebsiteURL:
@@ -689,15 +505,15 @@ Outputs:
 
   VisitorsTableName:
     Description: Visitors Table
-    Value: !Ref VisitorsTable
+    Value: !Sub 'RestaurantApp-Visitors-${EnvironmentName}'
 
   MenuTableName:
     Description: Menu Table
-    Value: !Ref MenuTable
+    Value: !Sub 'RestaurantApp-Menu-${EnvironmentName}'
 
   BookingsTableName:
     Description: Bookings Table
-    Value: !Ref BookingsTable
+    Value: !Sub 'RestaurantApp-Bookings-${EnvironmentName}'
 
   FailoverBucketName:
     Description: S3 Failover Bucket
