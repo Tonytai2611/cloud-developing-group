@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MessageCircle, Send, ArrowLeft, Home, Bell, Coffee, Sparkles } from "lucide-react";
+import { useAuth } from '../hooks/useAuth';
 
 // Helper for notifications
 const Notification = ({ message, onClose }) => (
@@ -18,6 +19,7 @@ const Notification = ({ message, onClose }) => (
 
 const UserChatPage = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [ws, setWs] = useState(null);
@@ -38,10 +40,10 @@ const UserChatPage = () => {
             ts = ts + 'Z';
         }
         const date = new Date(ts);
-        return date.toLocaleTimeString('vi-VN', { 
-            hour: '2-digit', 
+        return date.toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
             minute: '2-digit',
-            hour12: false 
+            hour12: false
         });
     };
 
@@ -51,37 +53,27 @@ const UserChatPage = () => {
         setTimeout(() => setNotification(null), 3000);
     };
 
-    // Fetch current user info from cookie
+    // Get user email from AuthProvider
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            try {
-                const response = await fetch("/api/me");
-                if (response.ok) {
-                    const data = await response.json();
-                    const newUserEmail = data.userInfo?.email || data.userInfo?.username;
-                    
-                    // If user changed, clear old messages and disconnect old WebSocket
-                    if (userEmail && userEmail !== newUserEmail) {
-                        console.log('User changed from', userEmail, 'to', newUserEmail);
-                        setMessages([]); // Clear old messages
-                        if (ws) {
-                            ws.close();
-                            setWs(null);
-                        }
-                    }
-                    
-                    setUserEmail(newUserEmail);
-                } else {
-                    console.error("Not authenticated");
-                    navigate('/login');
+        if (user?.email || user?.username) {
+            const newUserEmail = user.email || user.username;
+
+            // If user changed, clear old messages and disconnect old WebSocket
+            if (userEmail && userEmail !== newUserEmail) {
+                console.log('User changed from', userEmail, 'to', newUserEmail);
+                setMessages([]); // Clear old messages
+                if (ws) {
+                    ws.close();
+                    setWs(null);
                 }
-            } catch (error) {
-                console.error("Error fetching user info:", error);
-                navigate('/login');
             }
-        };
-        fetchUserInfo();
-    }, [navigate]);
+
+            setUserEmail(newUserEmail);
+        } else {
+            console.error("Not authenticated");
+            navigate('/');
+        }
+    }, [user, navigate]);
 
     // Connect to WebSocket when chat opens AND user is loaded
     useEffect(() => {
@@ -91,7 +83,7 @@ const UserChatPage = () => {
         if (ws) {
             ws.close();
         }
-        
+
         // Clear messages for new connection
         setMessages([]);
 
@@ -137,7 +129,7 @@ const UserChatPage = () => {
                     timestamp: data.timestamp,
                     isUser: isMyMessage
                 };
-                
+
                 // Check for duplicates before adding
                 setMessages(prev => {
                     const exists = prev.some(m => m.id === data.messageId);
@@ -248,7 +240,7 @@ const UserChatPage = () => {
 
                 {/* Chat Container */}
                 <div className="flex-1 bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-gray-100">
-                    
+
                     {/* Chat Header */}
                     <div className="bg-gradient-to-r from-[#14B8A6] to-[#0D9488] p-5 flex items-center gap-4">
                         <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
@@ -265,7 +257,7 @@ const UserChatPage = () => {
                     </div>
 
                     {/* Messages Area */}
-                    <div 
+                    <div
                         ref={messagesContainerRef}
                         onScroll={handleScroll}
                         className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50/50 to-white"

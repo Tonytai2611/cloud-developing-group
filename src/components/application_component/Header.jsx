@@ -13,16 +13,17 @@ import {
 import AWS from 'aws-sdk';
 import CryptoJS from 'crypto-js';
 import { toast } from 'sonner';
+import { useAuth } from '../../hooks/useAuth';
 
 const Header = () => {
     const navigate = useNavigate();
+    const { user, login: authLogin, logout: authLogout, loading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState("login");
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [role, setRole] = useState('customer'); // Default role
-    const [user, setUser] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -43,48 +44,19 @@ const Header = () => {
         return CryptoJS.enc.Base64.stringify(hash);
     };
 
-    // Fetch user info
-    const fetchUserInfo = async () => {
-        try {
-            const response = await fetch("/api/me");
-            if (response.ok) {
-                const data = await response.json();
-                setUser(data.userInfo);
-            } else {
-                setUser(null);
-            }
-        } catch (error) {
-            console.error("Error fetching user info:", error);
-        }
-    };
+    // User info is managed by AuthProvider, no need for fetchUserInfo
 
-    useEffect(() => {
-        fetchUserInfo();
-    }, []);
-
-    // Handle login
+    // Handle login with JWT
     const onSubmitLogin = async (e) => {
         e.preventDefault();
+        setLoading(true);
 
         try {
-            const response = await fetch("/api/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ username, password }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Login failed");
-            }
-
-            const result = await response.json();
+            const result = await authLogin(username, password);
             toast.success("Welcome back!", {
                 description: result.isAdmin ? "Redirecting to admin panel..." : "Login successful"
             });
-            fetchUserInfo();
+            setDialogOpen(false);
             if (result.isAdmin) {
                 navigate("/admin");
             } else {
@@ -95,6 +67,8 @@ const Header = () => {
             toast.error("Login failed", {
                 description: err.message || "Invalid credentials"
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -155,20 +129,12 @@ const Header = () => {
         }
     };
 
-    // Handle logout
+    // Handle logout with JWT
     const onLogout = async () => {
         try {
-            const response = await fetch("/api/logout", {
-                method: "POST",
-            });
-
-            if (response.ok) {
-                setUser(null);
-                toast.success("Logged out successfully");
-                navigate("/");
-            } else {
-                throw new Error("Failed to log out");
-            }
+            await authLogout();
+            toast.success("Logged out successfully");
+            navigate("/");
         } catch (err) {
             console.error("Logout error:", err);
             toast.error("Logout failed", {
@@ -260,8 +226,8 @@ const Header = () => {
                                     <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
                                         <button
                                             className={`flex-1 px-4 py-2 font-medium transition-all rounded-md text-sm ${activeTab === "login"
-                                                    ? "bg-white text-teal-600 shadow-sm"
-                                                    : "text-gray-500 hover:text-gray-700"
+                                                ? "bg-white text-teal-600 shadow-sm"
+                                                : "text-gray-500 hover:text-gray-700"
                                                 }`}
                                             onClick={() => setActiveTab("login")}
                                         >
@@ -269,8 +235,8 @@ const Header = () => {
                                         </button>
                                         <button
                                             className={`flex-1 px-4 py-2 font-medium transition-all rounded-md text-sm ${activeTab === "register"
-                                                    ? "bg-white text-teal-600 shadow-sm"
-                                                    : "text-gray-500 hover:text-gray-700"
+                                                ? "bg-white text-teal-600 shadow-sm"
+                                                : "text-gray-500 hover:text-gray-700"
                                                 }`}
                                             onClick={() => setActiveTab("register")}
                                         >

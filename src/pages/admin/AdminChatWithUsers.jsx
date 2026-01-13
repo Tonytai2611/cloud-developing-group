@@ -12,6 +12,7 @@ import {
   Bell
 } from "lucide-react";
 import AdminHeader from "../../components/application_component/AdminHeader";
+import { useAuth } from '../../hooks/useAuth';
 
 // Helper for notifications
 const Notification = ({ message, onClose }) => (
@@ -29,6 +30,7 @@ const Notification = ({ message, onClose }) => (
 
 const AdminChatWithUsers = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]); // Dynamic list of users
   const [messages, setMessages] = useState([]);
@@ -52,10 +54,10 @@ const AdminChatWithUsers = () => {
       ts = ts + 'Z';
     }
     const date = new Date(ts);
-    return date.toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false
     });
   };
 
@@ -65,27 +67,17 @@ const AdminChatWithUsers = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Fetch admin email from cookie first
+  // Get admin email from AuthProvider
   useEffect(() => {
-    const fetchAdminInfo = async () => {
-      try {
-        const response = await fetch("/api/me");
-        if (response.ok) {
-          const data = await response.json();
-          const email = data.userInfo?.email || data.userInfo?.username;
-          console.log('Admin email from cookie:', email);
-          setAdminEmail(email);
-        } else {
-          console.error("Not authenticated");
-          navigate('/login');
-        }
-      } catch (error) {
-        console.error("Error fetching admin info:", error);
-        navigate('/login');
-      }
-    };
-    fetchAdminInfo();
-  }, [navigate]);
+    if (user?.email || user?.username) {
+      const email = user.email || user.username;
+      console.log('Admin email from AuthProvider:', email);
+      setAdminEmail(email);
+    } else {
+      console.error("Not authenticated");
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   // Connect WebSocket after adminEmail is loaded
   useEffect(() => {
@@ -133,7 +125,7 @@ const AdminChatWithUsers = () => {
               lastMessage: conv.lastMessage || 'No messages',
               lastTimestamp: conv.lastTimestamp
             }));
-            
+
             setUsers(prevUsers => {
               // Merge with existing online users
               const merged = [...historyUsers];
@@ -152,7 +144,7 @@ const AdminChatWithUsers = () => {
             console.log('Got user list:', data.users?.length || 0, 'online users');
             // Update online status for users
             const onlineUserEmails = data.users.map(u => u.userId);
-            
+
             setUsers(prevUsers => {
               if (prevUsers.length === 0) {
                 // If no history, just show online users
@@ -166,7 +158,7 @@ const AdminChatWithUsers = () => {
                   lastMessage: 'Online now'
                 }));
               }
-              
+
               // Update online status for existing users
               return prevUsers.map(user => ({
                 ...user,
@@ -224,7 +216,7 @@ const AdminChatWithUsers = () => {
               // Check if message already exists
               const exists = prev.some(m => m.id === data.messageId);
               if (exists) return prev;
-              
+
               return [...prev, {
                 id: data.messageId,
                 text: data.message,
@@ -443,7 +435,7 @@ const AdminChatWithUsers = () => {
                 </div>
 
                 {/* Messages */}
-                <div 
+                <div
                   ref={messagesContainerRef}
                   onScroll={handleScroll}
                   className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50"
