@@ -70,20 +70,29 @@ def lambda_handler(event, context):
         # Get additional user data from DynamoDB
         table = dynamodb.Table(USERS_TABLE)
         try:
-            db_response = table.get_item(Key={'username': username})
+            # Table uses 'id' as Partition Key, which stores the username
+            db_response = table.get_item(Key={'id': username})
             db_user = decimal_to_native(db_response.get('Item', {}))
         except Exception as db_error:
             print(f"DynamoDB error: {str(db_error)}")
             db_user = {}
+        
+        # Determine role: DynamoDB > Cognito > 'customer'
+        db_role = db_user.get('role')
+        cognito_role = attributes.get('custom:role')
+        final_role = db_role or cognito_role or 'customer'
+        
+        # Check if admin
+        is_admin = final_role == 'admin'
         
         # Merge user data
         user_data = {
             'username': username,
             'email': attributes.get('email', ''),
             'name': attributes.get('name', ''),
-            'role': attributes.get('custom:role', 'customer'),
+            'role': final_role,
             'isAdmin': is_admin,
-            **db_user
+            **{k: v for k, v in db_user.items() if k != 'role'}
         }
         
         print(f"✅ User info retrieved for {username}")

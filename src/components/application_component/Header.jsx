@@ -53,13 +53,25 @@ const Header = () => {
 
         try {
             const result = await authLogin(username, password);
+            console.log('Login result:', result); // Debug log
+            console.log('result.isAdmin:', result.isAdmin);
+            console.log('result.userInfo:', result.userInfo);
+            console.log('result.userInfo?.role:', result.userInfo?.role);
+
+            // Check if user is admin from multiple sources
+            const isAdmin = result.isAdmin || result.userInfo?.role === 'admin' || result.userInfo?.isAdmin;
+            console.log('Final isAdmin value:', isAdmin);
+
             toast.success("Welcome back!", {
-                description: result.isAdmin ? "Redirecting to admin panel..." : "Login successful"
+                description: isAdmin ? "Redirecting to admin panel..." : "Login successful"
             });
             setDialogOpen(false);
-            if (result.isAdmin) {
+
+            if (isAdmin) {
+                console.log('Redirecting to /admin');
                 navigate("/admin");
             } else {
+                console.log('Redirecting to /');
                 navigate("/");
             }
         } catch (err) {
