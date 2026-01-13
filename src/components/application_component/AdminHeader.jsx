@@ -2,6 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'sonner';
 
+const API_BASE = 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+
 function AdminHeader() {
     const navigate = useNavigate();
 
@@ -11,7 +13,7 @@ function AdminHeader() {
             
             if (token) {
                 // Try to call logout API to invalidate token on server
-                await fetch("/api/logout", {
+                await fetch(`${API_BASE}/api/logout`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json',
