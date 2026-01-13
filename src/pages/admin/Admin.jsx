@@ -205,47 +205,8 @@ export default function Admin() {
           })}
         </div>
 
-        {/* Email Subscription Section */}
-        <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-2xl p-8 mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-teal-100 p-3 rounded-xl">
-              <Mail className="w-6 h-6 text-teal-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800">Email Subscription Management</h2>
-          </div>
+        
 
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-            <input
-              type="email"
-              placeholder="Enter email to subscribe"
-              className="flex-1 bg-white border border-gray-300 rounded-xl p-4 text-gray-800 placeholder:text-gray-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Button
-              className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold rounded-xl px-8 py-4 hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg"
-              onClick={handleSubscribe}
-            >
-              Subscribe
-            </Button>
-          </div>
-
-          {message && (
-            <div className={`mt-4 p-4 rounded-xl flex items-center gap-3 ${message.includes('successful')
-              ? 'bg-emerald-50 border border-emerald-200'
-              : 'bg-red-50 border border-red-200'
-              }`}>
-              {message.includes('successful') ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-600" />
-              )}
-              <span className={message.includes('successful') ? 'text-emerald-700' : 'text-red-700'}>
-                {message}
-              </span>
-            </div>
-          )}
-        </div>
 
         {/* Quick Actions Section */}
         <div className="mb-6">
