@@ -1,0 +1,39 @@
+=====================================
+Deploy BrewCraft Frontend to ECR
+=====================================
+
+[1;33mGetting AWS account info...[0m
+[0;32mAWS Account: 533266957010[0m
+[0;32mECR Repository: 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend[0m
+
+[1;33mChecking ECR repository...[0m
+{
+    "repositories": [
+        {
+            "repositoryArn": "arn:aws:ecr:us-east-1:533266957010:repository/brewcraft-frontend",
+            "registryId": "533266957010",
+            "repositoryName": "brewcraft-frontend",
+            "repositoryUri": "533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend",
+            "createdAt": "2026-01-12T21:22:41.649000+07:00",
+            "imageTagMutability": "MUTABLE",
+            "imageScanningConfiguration": {
+                "scanOnPush": true
+            },
+            "encryptionConfiguration": {
+                "encryptionType": "AES256"
+            }
+        }
+    ]
+}
+[0;32mECR repository ready[0m
+
+[1;33mLogging in to ECR...[0m
+
+WARNING! Your credentials are stored unencrypted in '/home/devsain_laptop/.docker/config.json'.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/go/credential-store/
+
+Login Succeeded
+[0;32mLogged in successfully[0m
+
+[1;33mBuilding Docker image...[0m
