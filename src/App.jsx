@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import Header from './components/application_component/Header';
 import Footer from './components/application_component/Footer';
 import UserChatPage from './pages/UserChatPage';
-import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import Home from './pages/Home';
 import Menu from './pages/Menu';
@@ -36,7 +35,7 @@ function Layout({ children }) {
     "/admin/chat-with-users"
   ];
 
-  const excludedChatboxPages = ["/user-profile", "/register", "/login"];
+  const excludedChatboxPages = ["/user-profile", "/register"];
 
   const showHeader = !noHeaderPages.includes(location.pathname);
   const showChatbox = !excludedChatboxPages.includes(location.pathname);
@@ -66,7 +65,6 @@ function App() {
           <Route path="/booking" element={<Booking />} />
           <Route path="/table" element={<Table />} />
           <Route path="/user-profile" element={<UserProfile />} />
-          <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Signup />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/chat" element={<UserChatPage />} />
