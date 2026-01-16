@@ -4,8 +4,8 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import { tableApi } from '../services/tableApi';
 import { bookingApi } from '../services/bookingApi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar, Clock, Users, MapPin, CheckCircle, ChevronLeft, ChevronRight, 
+import {
+  Calendar, Clock, Users, MapPin, CheckCircle, ChevronLeft, ChevronRight,
   UtensilsCrossed, User, Phone, Mail, MessageSquare, ArrowLeft, ArrowRight,
   Globe
 } from 'lucide-react';
@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 const BookingCalendar = ({ selectedDate, onSelectDate, currentMonth, setCurrentMonth }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
   const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -26,23 +26,23 @@ const BookingCalendar = ({ selectedDate, onSelectDate, currentMonth, setCurrentM
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    
+
     // Get the day of week for the first day (0 = Sunday, we want Monday = 0)
     let startDay = firstDay.getDay() - 1;
     if (startDay < 0) startDay = 6;
-    
+
     const days = [];
-    
+
     // Add empty slots for days before the first of the month
     for (let i = 0; i < startDay; i++) {
       days.push(null);
     }
-    
+
     // Add the days of the month
     for (let i = 1; i <= daysInMonth; i++) {
       days.push(new Date(year, month, i));
     }
-    
+
     return days;
   };
 
@@ -83,9 +83,8 @@ const BookingCalendar = ({ selectedDate, onSelectDate, currentMonth, setCurrentM
         <button
           onClick={prevMonth}
           disabled={!canGoPrev()}
-          className={`p-2 rounded-full transition-colors ${
-            canGoPrev() ? 'hover:bg-gray-100 text-gray-600' : 'text-gray-300 cursor-not-allowed'
-          }`}
+          className={`p-2 rounded-full transition-colors ${canGoPrev() ? 'hover:bg-gray-100 text-gray-600' : 'text-gray-300 cursor-not-allowed'
+            }`}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -117,13 +116,12 @@ const BookingCalendar = ({ selectedDate, onSelectDate, currentMonth, setCurrentM
               <button
                 onClick={() => isDateAvailable(date) && onSelectDate(date)}
                 disabled={!isDateAvailable(date)}
-                className={`w-full h-full rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                  isSelected(date)
+                className={`w-full h-full rounded-full flex items-center justify-center text-sm font-medium transition-all ${isSelected(date)
                     ? 'bg-teal-500 text-white shadow-lg'
                     : isDateAvailable(date)
-                    ? 'text-teal-600 hover:bg-teal-50 cursor-pointer'
-                    : 'text-gray-300 cursor-not-allowed'
-                } ${isToday(date) && !isSelected(date) ? 'ring-2 ring-teal-500 ring-offset-2' : ''}`}
+                      ? 'text-teal-600 hover:bg-teal-50 cursor-pointer'
+                      : 'text-gray-300 cursor-not-allowed'
+                  } ${isToday(date) && !isSelected(date) ? 'ring-2 ring-teal-500 ring-offset-2' : ''}`}
               >
                 {date.getDate()}
               </button>
@@ -167,11 +165,10 @@ const TimeSlots = ({ selectedTime, onSelectTime, selectedDate }) => {
           <button
             key={time}
             onClick={() => onSelectTime(time)}
-            className={`w-full py-3 px-4 rounded-lg border-2 text-center font-medium transition-all ${
-              selectedTime === time
+            className={`w-full py-3 px-4 rounded-lg border-2 text-center font-medium transition-all ${selectedTime === time
                 ? 'border-teal-500 bg-teal-500 text-white'
                 : 'border-gray-200 hover:border-teal-500 text-teal-600'
-            }`}
+              }`}
           >
             {formatTime(time)}
           </button>
@@ -195,7 +192,7 @@ export default function Booking() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState('');
-  
+
   const [formData, setFormData] = useState({
     customerName: '',
     phone: '',
@@ -284,7 +281,7 @@ export default function Booking() {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 flex items-center justify-center py-20">
-        <motion.div 
+        <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="max-w-2xl mx-auto px-4"
@@ -372,14 +369,14 @@ export default function Booking() {
                 </div>
                 <p className="text-teal-200 text-sm mb-1">BrewCraft Restaurant</p>
                 <h2 className="text-2xl font-bold mb-4">Table Reservation</h2>
-                
+
                 <div className="flex items-center gap-2 text-teal-100 mb-6">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm">Duration: ~2 hours</span>
                 </div>
 
                 <p className="text-teal-100 text-sm leading-relaxed mb-8">
-                  Reserve your perfect dining experience at BrewCraft. 
+                  Reserve your perfect dining experience at BrewCraft.
                   Enjoy our exquisite cuisine and warm atmosphere.
                 </p>
 
@@ -427,7 +424,7 @@ export default function Booking() {
                     exit={{ opacity: 0, x: -20 }}
                   >
                     <h3 className="text-xl font-semibold text-gray-800 mb-6">Select a Date & Time</h3>
-                    
+
                     <div className="flex flex-col md:flex-row gap-8">
                       {/* Calendar */}
                       <div className="flex-1">
@@ -484,7 +481,7 @@ export default function Booking() {
                     </button>
 
                     <h3 className="text-xl font-semibold text-gray-800 mb-6">Enter Your Details</h3>
-                    
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                       {/* Name & Phone */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -538,9 +535,8 @@ export default function Booking() {
                             onChange={handleChange}
                             disabled={!!userEmail}
                             required
-                            className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
-                              userEmail ? 'bg-gray-50 cursor-not-allowed' : ''
-                            }`}
+                            className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${userEmail ? 'bg-gray-50 cursor-not-allowed' : ''
+                              }`}
                             placeholder="you@example.com"
                           />
                         </div>
@@ -589,6 +585,73 @@ export default function Booking() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Capacity Warning */}
+                      {(() => {
+                        const selectedTableData = tables.find(t => t.id === formData.tableId);
+                        const guests = parseInt(formData.guests);
+                        const capacity = selectedTableData?.seats || 0;
+
+                        if (selectedTableData && guests > capacity) {
+                          return (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-4"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0">
+                                  <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-semibold text-amber-800 mb-1">
+                                    Table Capacity Notice
+                                  </h4>
+                                  <p className="text-sm text-amber-700">
+                                    You've selected <span className="font-bold">{guests} guests</span> for a table with <span className="font-bold">{capacity} seats</span>.
+                                    {guests - capacity === 1 ? (
+                                      <span> Consider selecting a larger table or we can arrange additional seating.</span>
+                                    ) : (
+                                      <span> We recommend choosing a larger table or booking multiple tables for your party.</span>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-amber-600 mt-2 italic">
+                                    💡 Tip: You can still proceed with this booking, and our staff will assist with seating arrangements.
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        }
+
+                        if (selectedTableData && guests < capacity - 1) {
+                          return (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0">
+                                  <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm text-blue-700">
+                                    This table has <span className="font-bold">{capacity} seats</span> but you've selected <span className="font-bold">{guests} {guests === 1 ? 'guest' : 'guests'}</span>.
+                                    You might want to choose a smaller table for a more intimate setting.
+                                  </p>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        }
+
+                        return null;
+                      })()}
 
                       {/* Special Requests */}
                       <div>
@@ -644,11 +707,10 @@ export default function Booking() {
                       <button
                         type="submit"
                         disabled={loading || tables.length === 0}
-                        className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                          loading || tables.length === 0
+                        className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${loading || tables.length === 0
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-teal-500 text-white hover:bg-teal-600 hover:shadow-teal-500/30'
-                        }`}
+                          }`}
                       >
                         {loading ? (
                           <span className="flex items-center justify-center gap-2">
