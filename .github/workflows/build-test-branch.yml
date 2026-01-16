@@ -25,13 +25,13 @@ jobs:
 
       - name: Build Docker image
         run: |
-          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          REPO_LC=devtorious/cloud-developing-group
           TAG_LC=$(echo "test-${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]')
           docker build -t ghcr.io/$REPO_LC/$TAG_LC .
 
       - name: Push Docker image
         run: |
-          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          REPO_LC=devtorious/cloud-developing-group
           TAG_LC=$(echo "test-${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]')
           docker push ghcr.io/$REPO_LC/$TAG_LC
 
