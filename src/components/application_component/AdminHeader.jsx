@@ -2,27 +2,47 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'sonner';
 
+const API_BASE = 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+
 function AdminHeader() {
     const navigate = useNavigate();
 
     const onLogout = async () => {
         try {
-            const response = await fetch("/api/logout", {
-                method: "POST",
-            });
-
-            if (response.ok) {
-                toast.success("Logged out successfully");
-                navigate("/");
-                window.location.reload(); // Reload to clear user state
-            } else {
-                throw new Error("Failed to log out");
+            const token = localStorage.getItem('accessToken');
+            
+            if (token) {
+                // Try to call logout API to invalidate token on server
+                await fetch(`${API_BASE}/api/logout`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                }).catch(() => {
+                    // Ignore errors - we'll clear local storage anyway
+                });
             }
+            
+            // Clear all auth data from localStorage
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('idToken');
+            localStorage.removeItem('username');
+            localStorage.removeItem('email');
+            localStorage.removeItem('name');
+            localStorage.removeItem('role');
+            
+            toast.success("Logged out successfully");
+            navigate("/");
+            window.location.reload(); // Reload to clear user state
         } catch (err) {
             console.error("Logout error:", err);
-            toast.error("Logout failed", {
-                description: err.message || "An error occurred"
-            });
+            // Still clear local storage and redirect even if API fails
+            localStorage.clear();
+            toast.success("Logged out successfully");
+            navigate("/");
+            window.location.reload();
         }
     };
 

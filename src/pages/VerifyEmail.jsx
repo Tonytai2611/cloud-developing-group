@@ -7,6 +7,8 @@ function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
+const API_BASE = 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+
 export default function VerifyEmail() {
   const query = useQuery();
   const username = query.get('username') || localStorage.getItem('username') || '';
@@ -92,7 +94,7 @@ export default function VerifyEmail() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/confirm', {
+      const res = await fetch(`${API_BASE}/api/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, code, email: storedEmail, name: storedName, role: storedRole })
