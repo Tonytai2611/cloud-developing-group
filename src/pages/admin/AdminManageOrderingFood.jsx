@@ -105,13 +105,29 @@ export default function AdminManageOrderingFood() {
     ? bookings
     : bookings.filter(b => b.status === filter);
 
+  // Separate bookings by type - check both 'total' and 'totalPrice'
+  const tableOnlyBookings = bookings.filter(b => {
+    const price = b.totalPrice || b.total || 0;
+    return price === 0;
+  });
+
+  const foodBookings = bookings.filter(b => {
+    const price = b.totalPrice || b.total || 0;
+    return price > 0;
+  });
+
   const stats = {
-    total: bookings.reduce((sum, b) => sum + b.total, 0),
-    pending: bookings.filter(b => b.status === 'PENDING').reduce((sum, b) => sum + b.total, 0),
-    confirmed: bookings.filter(b => b.status === 'CONFIRMED').reduce((sum, b) => sum + b.total, 0),
+    total: bookings.reduce((sum, b) => sum + (b.totalPrice || b.total || 0), 0),
+    pending: bookings.filter(b => b.status === 'PENDING').reduce((sum, b) => sum + (b.totalPrice || b.total || 0), 0),
+    confirmed: bookings.filter(b => b.status === 'CONFIRMED').reduce((sum, b) => sum + (b.totalPrice || b.total || 0), 0),
     count: bookings.length,
     pendingCount: bookings.filter(b => b.status === 'PENDING').length,
-    confirmedCount: bookings.filter(b => b.status === 'CONFIRMED').length
+    confirmedCount: bookings.filter(b => b.status === 'CONFIRMED').length,
+    // New: Separate counts
+    tableOnlyCount: tableOnlyBookings.length,
+    foodBookingsCount: foodBookings.length,
+    tableOnlyConfirmed: tableOnlyBookings.filter(b => b.status === 'CONFIRMED').length,
+    foodBookingsConfirmed: foodBookings.filter(b => b.status === 'CONFIRMED').length
   };
 
   if (loading && bookings.length === 0) {
@@ -192,6 +208,33 @@ export default function AdminManageOrderingFood() {
           </div>
         </div>
 
+        {/* Booking Type Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-white p-3 rounded-xl shadow-sm">
+                <Calendar className="w-6 h-6 text-purple-600" />
+              </div>
+              <span className="text-xs font-semibold text-purple-600 bg-white px-3 py-1 rounded-full">Table Only</span>
+            </div>
+            <h3 className="text-purple-900 text-sm font-medium mb-1">Table Reservations</h3>
+            <p className="text-3xl font-bold text-purple-900">{stats.tableOnlyCount}</p>
+            <p className="text-sm text-purple-700 mt-2">{stats.tableOnlyConfirmed} confirmed reservations</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="bg-white p-3 rounded-xl shadow-sm">
+                <UtensilsCrossed className="w-6 h-6 text-teal-600" />
+              </div>
+              <span className="text-xs font-semibold text-teal-600 bg-white px-3 py-1 rounded-full">Food + Table</span>
+            </div>
+            <h3 className="text-teal-900 text-sm font-medium mb-1">Food Orders</h3>
+            <p className="text-3xl font-bold text-teal-900">{stats.foodBookingsCount}</p>
+            <p className="text-sm text-teal-700 mt-2">{stats.foodBookingsConfirmed} confirmed with food</p>
+          </div>
+        </div>
+
         {/* Filter */}
         <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6 mb-6">
           <div className="flex items-center gap-3 flex-wrap">
@@ -202,8 +245,8 @@ export default function AdminManageOrderingFood() {
             <button
               onClick={() => setFilter('ALL')}
               className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${filter === 'ALL'
-                  ? 'bg-teal-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-teal-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               All <span className="ml-1 opacity-75">({stats.count})</span>
@@ -211,8 +254,8 @@ export default function AdminManageOrderingFood() {
             <button
               onClick={() => setFilter('PENDING')}
               className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${filter === 'PENDING'
-                  ? 'bg-amber-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-amber-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               Pending <span className="ml-1 opacity-75">({stats.pendingCount})</span>
@@ -220,8 +263,8 @@ export default function AdminManageOrderingFood() {
             <button
               onClick={() => setFilter('CONFIRMED')}
               className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${filter === 'CONFIRMED'
-                  ? 'bg-emerald-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-emerald-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               Confirmed <span className="ml-1 opacity-75">({stats.confirmedCount})</span>
@@ -266,8 +309,8 @@ export default function AdminManageOrderingFood() {
                   </div>
                   <div>
                     <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold ${booking.status === 'CONFIRMED'
-                        ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border-2 border-amber-200'
+                      ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-200'
+                      : 'bg-amber-50 text-amber-700 border-2 border-amber-200'
                       }`}>
                       {booking.status === 'CONFIRMED' ? (
                         <><CheckCircle className="w-4 h-4" /> Confirmed</>

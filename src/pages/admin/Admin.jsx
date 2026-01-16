@@ -169,75 +169,113 @@ export default function Admin() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-teal-50/30 to-purple-50/20">
       <AdminHeader />
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Welcome back, Admin 👋
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Here's what's happening with your restaurant today
-          </p>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Welcome Section with Gradient */}
+        <div className="mb-10 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-purple-500/10 rounded-3xl blur-3xl"></div>
+          <div className="relative">
+            <h1 className="text-5xl font-extrabold bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent mb-3">
+              Welcome back, Admin 👋
+            </h1>
+            <p className="text-gray-600 text-lg font-medium">
+              Here's what's happening with your restaurant today
+            </p>
+          </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Statistics Cards with Gradients */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
+            const gradients = [
+              'from-blue-500 to-cyan-500',
+              'from-amber-500 to-orange-500',
+              'from-emerald-500 to-teal-500',
+              'from-purple-500 to-pink-500'
+            ];
             return (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded-2xl p-6 hover:border-teal-300 hover:shadow-lg transition-all duration-300 hover:transform hover:scale-105"
+                className="group relative bg-white rounded-3xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`${stat.bgColor} p-3 rounded-xl`}>
-                    <Icon className={`w-6 h-6 ${stat.iconColor}`} />
+                {/* Gradient Background */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${gradients[index]} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`bg-gradient-to-br ${gradients[index]} p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <TrendingUp className={`w-5 h-5 text-emerald-500 animate-bounce`} />
+                      <span className="text-xs text-emerald-600 font-semibold mt-1">+12%</span>
+                    </div>
                   </div>
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
+                  <h3 className="text-gray-500 text-sm font-semibold mb-2 uppercase tracking-wide">{stat.title}</h3>
+                  <p className="text-4xl font-black bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                    {stat.value}
+                  </p>
                 </div>
-                <h3 className="text-gray-600 text-sm font-medium mb-1">{stat.title}</h3>
-                <p className="text-3xl font-bold text-gray-800">{stat.value}</p>
+
+                {/* Decorative Elements */}
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br from-white/50 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
               </div>
             );
           })}
         </div>
 
-        
-
-
         {/* Quick Actions Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Quick Actions</h2>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Quick Actions</h2>
+          <p className="text-gray-600">Manage your restaurant efficiently</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action, index) => {
             const Icon = action.icon;
+            const gradients = [
+              { bg: 'from-teal-500 to-cyan-500', hover: 'group-hover:from-teal-600 group-hover:to-cyan-600' },
+              { bg: 'from-orange-500 to-red-500', hover: 'group-hover:from-orange-600 group-hover:to-red-600' },
+              { bg: 'from-blue-500 to-indigo-500', hover: 'group-hover:from-blue-600 group-hover:to-indigo-600' },
+              { bg: 'from-pink-500 to-purple-500', hover: 'group-hover:from-pink-600 group-hover:to-purple-600' }
+            ];
             return (
               <div
                 key={index}
                 onClick={() => navigate(action.route)}
-                className="group bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:border-teal-300 hover:transform hover:scale-105 hover:shadow-xl"
+                className="group relative bg-white rounded-3xl p-8 cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-3 overflow-hidden"
               >
-                <div className={`${action.iconBg} w-14 h-14 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <Icon className={`w-7 h-7 ${action.iconColor}`} />
+                {/* Gradient Border Effect */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${gradients[index].bg} ${gradients[index].hover} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl`}></div>
+                <div className="absolute inset-[2px] bg-white rounded-3xl"></div>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className={`bg-gradient-to-br ${gradients[index].bg} w-16 h-16 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg`}>
+                    <Icon className="w-8 h-8 text-white" />
+                  </div>
+
+                  <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-teal-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all">
+                    {action.title}
+                  </h3>
+
+                  <p className="text-gray-600 text-sm mb-5 leading-relaxed">
+                    {action.description}
+                  </p>
+
+                  <div className={`flex items-center text-transparent bg-gradient-to-r ${gradients[index].bg} bg-clip-text font-bold text-sm group-hover:gap-2 transition-all`}>
+                    <span>Open</span>
+                    <ChevronRight className={`w-5 h-5 text-teal-600 group-hover:translate-x-2 transition-transform duration-300`} />
+                  </div>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-teal-600 transition-colors">
-                  {action.title}
-                </h3>
-
-                <p className="text-gray-600 text-sm mb-4">
-                  {action.description}
-                </p>
-
-                <div className="flex items-center text-teal-600 text-sm font-medium group-hover:gap-2 transition-all">
-                  <span>Open</span>
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
+                {/* Decorative Circles */}
+                <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${gradients[index].bg} rounded-full opacity-10 group-hover:scale-150 group-hover:opacity-20 transition-all duration-700`}></div>
+                <div className={`absolute -bottom-10 -left-10 w-32 h-32 bg-gradient-to-br ${gradients[index].bg} rounded-full opacity-10 group-hover:scale-150 group-hover:opacity-20 transition-all duration-700`}></div>
               </div>
             );
           })}

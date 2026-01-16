@@ -89,6 +89,7 @@ def lambda_handler(event, context):
                 body = json.loads(event.get('body', '{}'))
                 name = body.get('name')
                 email = body.get('email')
+                avatar_url = body.get('avatarUrl')
                 
                 update_expr = []
                 expr_names = {}
@@ -102,6 +103,10 @@ def lambda_handler(event, context):
                     update_expr.append('#e = :e')
                     expr_names['#e'] = 'email'
                     expr_values[':e'] = email
+                if avatar_url:
+                    update_expr.append('#a = :a')
+                    expr_names['#a'] = 'avatarUrl'
+                    expr_values[':a'] = avatar_url
                 
                 if not update_expr:
                     return {
