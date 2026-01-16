@@ -30,12 +30,6 @@ jobs:
           TAG_LC=$(echo "test-${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]')
           docker build -t ghcr.io/$REPO_LC/$TAG_LC .
 
-      - name: Push Docker image
-        run: |
-          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          REPO_LC=$OWNER_LC/cloud-developing-group
-          TAG_LC=$(echo "test-${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]')
-          docker push ghcr.io/$REPO_LC/$TAG_LC
 
       - name: Mark as test branch
         run: |
