@@ -26,10 +26,16 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
+      - name: Create .ssh Directory
+        run: mkdir -p $HOME/.ssh
+
       - name: Configure SSH Key
         run: |
           echo "${{ secrets.SSH_KEY }}" > $HOME/.ssh/labsuser.pem
           chmod 400 $HOME/.ssh/labsuser.pem
+
+      - name: Verify SSH Key
+        run: ls -l $HOME/.ssh/labsuser.pem
 
       - name: Force Update EC2 Instances
         env:
