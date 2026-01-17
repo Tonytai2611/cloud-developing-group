@@ -45,6 +45,31 @@ const AdminChatWithUsers = () => {
   const messagesEndRef = useRef(null);
   const WS_URL = "wss://3w3qjyvvl9.execute-api.us-east-1.amazonaws.com/production";
 
+  // localStorage key for persisting conversations
+  const STORAGE_KEY = 'admin_chat_conversations';
+
+  // Load conversations from localStorage on mount (before WebSocket connects)
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const savedUsers = JSON.parse(saved);
+        console.log('Loaded', savedUsers.length, 'conversations from localStorage');
+        setUsers(savedUsers);
+      } catch (e) {
+        console.error('Failed to load saved conversations:', e);
+      }
+    }
+  }, []);
+
+  // Save conversations to localStorage whenever they change
+  useEffect(() => {
+    if (users.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+      console.log('Saved', users.length, 'conversations to localStorage');
+    }
+  }, [users]);
+
   // Format timestamp to local Vietnam time
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
