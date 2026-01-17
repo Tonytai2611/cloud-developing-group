@@ -5,16 +5,12 @@ on:
     branches:
       - dev
   workflow_dispatch:
-    inputs:
-      branch:
-        description: "Branch to run the workflow on"
-        required: true
-        default: dev
 
 jobs:
   build-and-deploy:
     name: Build and Deploy Docker Image
     runs-on: ubuntu-latest
+    environment: dev
 
     steps:
       - name: Checkout Code
@@ -26,77 +22,17 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
+          aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
-        id: login-ecr
+      - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
-        with:
-          mask-password: false
-          registry-type: private
-          skip-logout: false
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
 
       - name: Build and Push Docker Image
-        env:
-          AWS_REGION: us-east-1
         run: |
-          # Define variables
           ECR_REGISTRY=533266957010.dkr.ecr.us-east-1.amazonaws.com
           ECR_REPOSITORY=brewcraft-frontend
           IMAGE_TAG=latest
 
-          # Build the Docker image
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-
-          # Tag the image for ECR
           docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-          # Push the image to ECR
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-      - name: Force Update EC2 Instances
-        env:
-          AWS_REGION: us-east-1
-        run: |
-          # Get running EC2 instances
-          INSTANCE_IPS=$(aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=dev-brewcraft-instance" "Name=instance-state-name,Values=running" \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --output text)
-
-          if [ -z "$INSTANCE_IPS" ]; then
-              echo "No running instances found"
-              exit 1
-          fi
-
-          for IP in $INSTANCE_IPS; do
-              echo "Updating instance $IP..."
-              ssh -i ~/.ssh/vockey.pem -o StrictHostKeyChecking=no ec2-user@$IP << 'EOF'
-                  set -e
-
-                  echo "Logging into ECR..."
-                  aws ecr get-login-password --region us-east-1 | \
-                      sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.us-east-1.amazonaws.com
-
-                  echo "Stopping and removing old container..."
-                  sudo docker stop brewcraft-app 2>/dev/null || true
-                  sudo docker rm brewcraft-app 2>/dev/null || true
-
-                  echo "Pulling latest image..."
-                  sudo docker pull 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
-
-                  echo "Starting new container..."
-                  sudo docker run -d \
-                      --name brewcraft-app \
-                      --restart unless-stopped \
-                      -p 3000:80 \
-                      533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
-
-                  echo "Container updated!"
-              EOF
-          done
-
-          echo "All instances updated!"
