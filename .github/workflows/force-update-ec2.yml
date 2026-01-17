@@ -29,7 +29,7 @@ jobs:
       - name: Force Update EC2 Instances
         env:
           AWS_REGION: us-east
-          SSH_KEY: $HOME/.ssh/labsuser.pem
+          SSH_KEY: ${{ secrets.SSH_KEY }}
           ECR_IMAGE: 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
         run: |
           INSTANCE_IPS=$(aws ec2 describe-instances \
