@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - dev
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/build-and-deploy-image.yml"
+  
   workflow_dispatch:
 
 jobs:
