@@ -6,7 +6,7 @@ on:
       branch:
         description: "Branch to run the workflow on"
         required: true
-        default: dev
+        default: dev #check if this is needed
 
 jobs:
   update-ec2:
