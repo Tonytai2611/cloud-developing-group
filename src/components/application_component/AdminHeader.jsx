@@ -10,10 +10,10 @@ function AdminHeader() {
     const onLogout = async () => {
         try {
             const token = localStorage.getItem('accessToken');
-            
+
             if (token) {
                 // Try to call logout API to invalidate token on server
-                await fetch(`${API_BASE}/api/logout`, {
+                await fetch(`${API_BASE}/logout`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ function AdminHeader() {
                     // Ignore errors - we'll clear local storage anyway
                 });
             }
-            
+
             // Clear all auth data from localStorage
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
@@ -32,7 +32,7 @@ function AdminHeader() {
             localStorage.removeItem('email');
             localStorage.removeItem('name');
             localStorage.removeItem('role');
-            
+
             toast.success("Logged out successfully");
             navigate("/");
             window.location.reload(); // Reload to clear user state
