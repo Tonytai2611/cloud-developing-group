@@ -28,7 +28,10 @@ jobs:
 
       - name: Force Update EC2 Instances
         env:
-          AWS_REGION: us-east
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
           ECR_IMAGE: 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
         run: |
