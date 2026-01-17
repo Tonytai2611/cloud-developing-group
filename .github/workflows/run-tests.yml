@@ -4,7 +4,22 @@ on:
   pull_request:
     branches:
       - dev
-    workflow_dispatch:
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/run-tests.yml"
+  
+  push:
+    branches:
+      - dev
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/run-tests.yml"
+  
+  workflow_dispatch:
 
 jobs:
   test:
