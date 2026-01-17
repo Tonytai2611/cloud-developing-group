@@ -1,0 +1,48 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Lambda Invoke",
+  "States": {
+    "Lambda Invoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "ResultPath": "$.lambdaResult",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:533266957010:function:ValidateInput",
+        "Payload.$": "$"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "Next": "SNS Publish"
+    },
+    "SNS Publish": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "Message.$": "States.Format('New message received:\n\nName: {}\nEmail: {}\nMessage: {}', $.lambdaResult.Payload.input.name, $.lambdaResult.Payload.input.email, $.lambdaResult.Payload.input.message)",
+        "TopicArn": "arn:aws:sns:us-east-1:533266957010:AdminContactUs"
+      },
+      "Next": "SQS SendMessage"
+    },
+    "SQS SendMessage": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "MessageBody.$": "$",
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/533266957010/CustomerContact"
+      },
+      "End": true
+    }
+  }
+}

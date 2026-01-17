@@ -31,7 +31,7 @@ function generateSecretHash(username) {
     .digest('base64');
 }
 
-app.post('/api/register', async (req, res) => {
+app.post('/register', async (req, res) => {
   const { username, password, email, name } = req.body;
   if (!username || !password || !email) return res.status(400).json({ error: 'username/password/email required' });
 
@@ -61,12 +61,12 @@ app.post('/api/register', async (req, res) => {
 });
 
 // health
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ ok: true, table: USERS_TABLE || null, region: AWS.config.region || process.env.AWS_REGION });
 });
 
 // confirm: confirm code then write to DynamoDB
-app.post('/api/confirm', async (req, res) => {
+app.post('/confirm', async (req, res) => {
   // Accept optional email/name/role from client to avoid relying on adminGetUser
   let { username, code, email, name, role } = req.body || {};
   if (!username || !code) return res.status(400).json({ error: 'username and code required' });
@@ -138,7 +138,7 @@ app.post('/api/confirm', async (req, res) => {
   }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'username/password required' });
 
@@ -201,7 +201,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Get current user info from cookie
-app.get('/api/me', (req, res) => {
+app.get('/me', (req, res) => {
   try {
     const cookies = parse(req.headers.cookie || '');
     const userInfoStr = cookies.userInfo;
@@ -221,7 +221,7 @@ app.get('/api/me', (req, res) => {
 
 
 // CloudSample: confirmUser (alias of /api/confirm but kept lightweight)
-app.post('/api/confirmUser', async (req, res) => {
+app.post('/confirm', async (req, res) => {
   if (!req.body || req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
   const { username, verificationCode } = req.body;
   if (!username || !verificationCode) return res.status(400).json({ message: 'Missing username or verification code' });
@@ -243,20 +243,10 @@ app.post('/api/confirmUser', async (req, res) => {
   }
 });
 
-// Return user info from cookie
-app.get('/api/me', (req, res) => {
-  const cookies = parse(req.headers.cookie || '');
-  const userInfo = cookies.userInfo;
-  if (!userInfo) return res.status(401).json({ error: 'Not authenticated' });
-  try {
-    return res.status(200).json({ userInfo: JSON.parse(userInfo) });
-  } catch (e) {
-    return res.status(400).json({ error: 'Invalid userInfo cookie' });
-  }
-});
+// Duplicate /me route removed - using the one at line 204
 
 // Logout - clear cookies
-app.post('/api/logout', (req, res) => {
+app.post('/logout', (req, res) => {
   res.setHeader('Set-Cookie', [
     serialize('userInfo', '', {
       httpOnly: false,
@@ -270,8 +260,8 @@ app.post('/api/logout', (req, res) => {
 });
 
 // --- User CRUD endpoints (operate on USERS_TABLE)
-// GET /api/user -> return current user's profile (from DynamoDB)
-app.get('/api/user', async (req, res) => {
+// GET /user -> return current user's profile (from DynamoDB)
+app.get('/user', async (req, res) => {
   const cookies = parse(req.headers.cookie || '');
   const userInfo = cookies.userInfo ? JSON.parse(cookies.userInfo) : null;
   if (!userInfo || !userInfo.username) return res.status(401).json({ error: 'Not authenticated' });
@@ -279,7 +269,7 @@ app.get('/api/user', async (req, res) => {
 
   try {
     const normalizedUsername = userInfo.username.toLowerCase();
-    console.log('[DEBUG] GET /api/user - Querying DynamoDB for username:', normalizedUsername);
+    console.log('[DEBUG] GET /user - Querying DynamoDB for username:', normalizedUsername);
     console.log('[DEBUG] Table name:', USERS_TABLE);
     const result = await dynamodb.get({ TableName: USERS_TABLE, Key: { id: normalizedUsername } }).promise();
     console.log('[DEBUG] DynamoDB result:', JSON.stringify(result, null, 2));
@@ -289,13 +279,13 @@ app.get('/api/user', async (req, res) => {
     }
     return res.json({ item: result.Item });
   } catch (e) {
-    console.error('GET /api/user error:', e);
+    console.error('GET /user error:', e);
     return res.status(500).json({ error: 'Failed to read user' });
   }
 });
 
-// PUT /api/user -> update current user's profile (name,email)
-app.put('/api/user', async (req, res) => {
+// PUT /user -> update current user's profile (name,email)
+app.put('/user', async (req, res) => {
   const cookies = parse(req.headers.cookie || '');
   const userInfo = cookies.userInfo ? JSON.parse(cookies.userInfo) : null;
   if (!userInfo || !userInfo.username) return res.status(401).json({ error: 'Not authenticated' });
@@ -334,13 +324,13 @@ app.put('/api/user', async (req, res) => {
     }).promise();
     return res.json({ item: resp.Attributes });
   } catch (e) {
-    console.error('PUT /api/user error:', e);
+    console.error('PUT /user error:', e);
     return res.status(500).json({ error: 'Failed to update user' });
   }
 });
 
-// DELETE /api/user -> delete current user's record from DynamoDB (does NOT delete Cognito user)
-app.delete('/api/user', async (req, res) => {
+// DELETE /user -> delete current user's record from DynamoDB (does NOT delete Cognito user)
+app.delete('/user', async (req, res) => {
   const cookies = parse(req.headers.cookie || '');
   const userInfo = cookies.userInfo ? JSON.parse(cookies.userInfo) : null;
   if (!userInfo || !userInfo.username) return res.status(401).json({ error: 'Not authenticated' });
@@ -354,13 +344,13 @@ app.delete('/api/user', async (req, res) => {
     res.setHeader('Set-Cookie', [serialize('userInfo', '', { path: '/', maxAge: 0 })]);
     return res.json({ message: 'User record deleted (Cognito user not deleted).' });
   } catch (e) {
-    console.error('DELETE /api/user error:', e);
+    console.error('DELETE /user error:', e);
     return res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 
 // Contact Us endpoint - Invoke Lambda to trigger Step Functions
-app.post('/api/contact', async (req, res) => {
+app.post('/contact', async (req, res) => {
   const { name, email, message } = req.body || {};
   if (!name || !email || !message) {
     return res.status(400).json({ error: 'Missing required fields: name, email, or message' });
@@ -392,7 +382,7 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // Upload image endpoint
-app.post('/api/upload', async (req, res) => {
+app.post('/upload', async (req, res) => {
   const { file, fileName } = req.body || {};
   if (!file || !fileName) {
     return res.status(400).json({ error: 'Missing file or fileName' });

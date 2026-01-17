@@ -34,7 +34,7 @@ export default function VerifyEmail() {
     if (value && !/^\d+$/.test(value)) return;
 
     const newOtp = [...otp];
-    
+
     // Handle paste
     if (value.length > 1) {
       const pastedCode = value.slice(0, 6).split('');
@@ -94,7 +94,7 @@ export default function VerifyEmail() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/confirm`, {
+      const res = await fetch(`${API_BASE}/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, code, email: storedEmail, name: storedName, role: storedRole })
@@ -140,7 +140,7 @@ export default function VerifyEmail() {
     if (!email) return '';
     const [localPart, domain] = email.split('@');
     if (!domain) return email;
-    const maskedLocal = localPart.length > 2 
+    const maskedLocal = localPart.length > 2
       ? localPart[0] + '***' + localPart[localPart.length - 1]
       : localPart;
     return `${maskedLocal}@${domain}`;
@@ -150,7 +150,7 @@ export default function VerifyEmail() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Back button */}
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
         >
@@ -196,8 +196,8 @@ export default function VerifyEmail() {
                       onPaste={handlePaste}
                       className={`w-11 h-14 sm:w-12 sm:h-14 text-center text-xl font-semibold border-2 rounded-lg 
                         transition-all duration-200 outline-none
-                        ${digit 
-                          ? 'border-teal-500 bg-teal-50 text-teal-700' 
+                        ${digit
+                          ? 'border-teal-500 bg-teal-50 text-teal-700'
                           : 'border-gray-300 bg-gray-50'
                         }
                         focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 focus:bg-white

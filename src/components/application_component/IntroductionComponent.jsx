@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { UtensilsCrossed, Flame, Clock, Star, ArrowRight, Leaf, ChefHat } from "lucide-react";
+import { UtensilsCrossed, Flame, Clock, Star, ArrowRight, Leaf, ChefHat, CheckCircle } from "lucide-react";
+import { tableApi } from "../../services/tableApi";
+import { bookingApi } from "../../services/bookingApi";
+import { toast } from "sonner";
+import { getCurrentUser } from 'aws-amplify/auth';
 
 // Animation variants
 const fadeInUp = {
@@ -19,6 +23,93 @@ const staggerContainer = {
 };
 
 const IntroductionComponent = () => {
+  const [tables, setTables] = useState([]);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    customerName: '',
+    email: '',
+    phone: '',
+    date: '',
+    time: '',
+    guests: '',
+    tableId: ''
+  });
+
+  useEffect(() => {
+    fetchTables();
+    fetchUserEmail();
+  }, []);
+
+  const fetchUserEmail = async () => {
+    try {
+      const user = await getCurrentUser();
+      const email = user.signInDetails?.loginId || user.attributes?.email || '';
+      setFormData(prev => ({ ...prev, email }));
+    } catch (error) {
+      console.log('User not authenticated');
+    }
+  };
+
+  const fetchTables = async () => {
+    try {
+      const response = await tableApi.list();
+      const availableTables = response.data.filter(t => t.status === 'AVAILABLE');
+      setTables(availableTables);
+    } catch (err) {
+      console.error('Failed to fetch tables:', err);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validation
+    if (!formData.customerName || !formData.email || !formData.date || !formData.time || !formData.guests || !formData.tableId) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await bookingApi.create({
+        ...formData,
+        phone: formData.phone || '0000000000',
+        guests: parseInt(formData.guests),
+        selectedItems: [],
+        total: 0,
+        specialRequests: ''
+      });
+
+      setBookingSuccess(true);
+      setFormData({
+        customerName: '',
+        email: formData.email, // Keep email
+        phone: '',
+        date: '',
+        time: '',
+        guests: '',
+        tableId: ''
+      });
+
+      // Reset success message after 5 seconds
+      setTimeout(() => setBookingSuccess(false), 5000);
+    } catch (err) {
+      toast.error('Booking failed', {
+        description: err.message || 'Please try again'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const features = [
     { icon: Leaf, title: "Fresh Ingredients", desc: "Locally sourced, premium quality ingredients for every dish" },
     { icon: ChefHat, title: "Expert Chefs", desc: "Passionate culinary artists crafting memorable meals" },
@@ -40,6 +131,9 @@ const IntroductionComponent = () => {
     { name: "Chef's Tasting Menu", desc: "5-course culinary journey curated by our head chef", price: "65.00" }
   ];
 
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <>
       {/* Quote Section */}
@@ -57,7 +151,7 @@ const IntroductionComponent = () => {
               <UtensilsCrossed className="w-12 h-12 mx-auto" />
             </div>
             <blockquote className="text-2xl md:text-3xl text-gray-700 italic font-serif leading-relaxed">
-              "Great food is the foundation of genuine happiness — crafted with passion, 
+              "Great food is the foundation of genuine happiness — crafted with passion,
               served with love, and shared with those who matter most."
             </blockquote>
             <div className="mt-6">
@@ -104,13 +198,13 @@ const IntroductionComponent = () => {
                 Our <span className="text-teal-600">Story</span>
               </h2>
               <p className="text-gray-600 leading-relaxed mb-6">
-                BrewCraft began with a simple passion: creating unforgettable dining experiences. 
-                Our restaurant combines exquisite cuisine with artisan beverages, 
+                BrewCraft began with a simple passion: creating unforgettable dining experiences.
+                Our restaurant combines exquisite cuisine with artisan beverages,
                 bringing together the best of both worlds.
               </p>
               <p className="text-gray-600 leading-relaxed mb-8">
-                Our team of talented chefs and mixologists brings together years of culinary 
-                expertise and a genuine love for food. Every dish we serve is a testament 
+                Our team of talented chefs and mixologists brings together years of culinary
+                expertise and a genuine love for food. Every dish we serve is a testament
                 to our commitment to quality and your experience.
               </p>
               <a
@@ -271,7 +365,7 @@ const IntroductionComponent = () => {
         </div>
       </section>
 
-      {/* Reservation Section */}
+      {/* Reservation Section - FUNCTIONAL */}
       <section className="py-20 bg-[#0F4C4C] relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
@@ -294,46 +388,171 @@ const IntroductionComponent = () => {
               Make a Reservation
             </h2>
             <p className="text-white/70 mb-8">
-              Book your table now and experience our exceptional service, 
+              Book your table now and experience our exceptional service,
               exquisite cuisine, and warm atmosphere.
             </p>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-white"
-                />
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-white"
-                />
-                <input
-                  type="date"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-white"
-                />
-                <input
-                  type="time"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-white"
-                />
-              </div>
-              <select className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-white mb-4">
-                <option value="" className="text-gray-900">Number of Guests</option>
-                <option value="1" className="text-gray-900">1 Person</option>
-                <option value="2" className="text-gray-900">2 People</option>
-                <option value="3" className="text-gray-900">3 People</option>
-                <option value="4" className="text-gray-900">4 People</option>
-                <option value="5+" className="text-gray-900">5+ People</option>
-              </select>
-              <a
-                href="/booking"
-                className="w-full inline-block px-8 py-4 bg-amber-500 text-gray-900 font-bold rounded-lg hover:bg-amber-400 transition-colors text-center"
+            {bookingSuccess ? (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white rounded-2xl p-8 text-center"
               >
-                Book Now
-              </a>
-            </div>
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
+                <p className="text-gray-600">
+                  We've received your reservation. Check your email for confirmation details.
+                </p>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <input
+                    type="text"
+                    name="customerName"
+                    value={formData.customerName}
+                    onChange={handleChange}
+                    placeholder="Your Name *"
+                    required
+                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-white"
+                  />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Email Address *"
+                    required
+                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-white"
+                  />
+                  <input
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    min={today}
+                    required
+                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-white"
+                  />
+                  <input
+                    type="time"
+                    name="time"
+                    value={formData.time}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-white"
+                  />
+                </div>
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <select
+                    name="guests"
+                    value={formData.guests}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-white"
+                  >
+                    <option value="" className="text-gray-900">Number of Guests *</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                      <option key={num} value={num} className="text-gray-900">{num} {num === 1 ? 'Person' : 'People'}</option>
+                    ))}
+                  </select>
+                  <select
+                    name="tableId"
+                    value={formData.tableId}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white focus:outline-none focus:border-white"
+                  >
+                    <option value="" className="text-gray-900">Select Table *</option>
+                    {tables.map(table => (
+                      <option key={table.id} value={table.id} className="text-gray-900">
+                        {table.tableNumber} ({table.seats} seats)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Capacity Warning */}
+                {(() => {
+                  const selectedTableData = tables.find(t => t.id === formData.tableId);
+                  const guests = parseInt(formData.guests);
+                  const capacity = selectedTableData?.seats || 0;
+
+                  if (selectedTableData && guests > capacity) {
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-amber-500/20 border-l-4 border-amber-500 rounded-lg p-4 mb-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            <svg className="w-5 h-5 text-amber-300 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-white mb-1">
+                              Table Capacity Notice
+                            </h4>
+                            <p className="text-sm text-white/90">
+                              You've selected <span className="font-bold">{guests} guests</span> for a table with <span className="font-bold">{capacity} seats</span>.
+                              {guests - capacity === 1 ? (
+                                <span> We can arrange additional seating for you.</span>
+                              ) : (
+                                <span> We recommend choosing a larger table or booking multiple tables.</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  }
+
+                  if (selectedTableData && guests < capacity - 1) {
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-blue-500/20 border-l-4 border-blue-400 rounded-lg p-4 mb-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            <svg className="w-5 h-5 text-blue-300 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-white/90">
+                              This table has <span className="font-bold">{capacity} seats</span> but you've selected <span className="font-bold">{guests} {guests === 1 ? 'guest' : 'guests'}</span>.
+                              You might want to choose a smaller table for a more intimate setting.
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  }
+
+                  return null;
+                })()}
+
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone Number (Optional)"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-white mb-4"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full px-8 py-4 bg-amber-500 text-gray-900 font-bold rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Booking...' : 'Book Now'}
+                </button>
+              </form>
+            )}
           </motion.div>
         </div>
       </section>
@@ -362,7 +581,7 @@ const IntroductionComponent = () => {
                   Seasonal Special
                 </h3>
                 <p className="text-white/80 mb-6">
-                  Try our exclusive seasonal menu — available for a limited time only. 
+                  Try our exclusive seasonal menu — available for a limited time only.
                   A unique culinary experience crafted by our head chef.
                 </p>
                 <a
