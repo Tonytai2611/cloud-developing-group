@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:3001', 
+      '^/(register|login|logout|me|user|confirm|confirmUser|verify-email|contact|upload|health|createBooking|updateBooking|deleteBooking|getBooking|createTable|updateTable|deleteTable|getTable|createMenuItem|updateMenuItem|deleteMenuItem|getMenu)': {
+        target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
       }

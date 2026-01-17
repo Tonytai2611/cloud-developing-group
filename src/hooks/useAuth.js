@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (username, password) => {
     try {
-      const response = await fetch(`${API_URL}/api/login`, {
+      const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -62,28 +62,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Logout function - client-side only
   const logout = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        await fetch(`${API_URL}/api/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear tokens
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('idToken');
-      localStorage.removeItem('refreshToken');
-      setAccessToken(null);
-      setUser(null);
-    }
+    // Clear all tokens and user state
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('idToken');
+    localStorage.removeItem('refreshToken');
+    setAccessToken(null);
+    setUser(null);
   };
 
   // Get current user info
@@ -96,7 +82,7 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
-      const response = await fetch(`${API_URL}/api/me`, {
+      const response = await fetch(`${API_URL}/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

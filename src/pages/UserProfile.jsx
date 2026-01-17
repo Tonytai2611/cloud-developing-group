@@ -24,7 +24,7 @@ export default function UserProfile() {
         throw new Error('Not authenticated. Please login again.');
       }
 
-      const res = await fetch(`${API_URL}/api/me`, {
+      const res = await fetch(`${API_URL}/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -141,7 +141,7 @@ export default function UserProfile() {
     try {
       const token = localStorage.getItem('accessToken');
 
-      const res = await fetch(`${API_URL}/api/me`, {
+      const res = await fetch(`${API_URL}/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -170,11 +170,11 @@ export default function UserProfile() {
   const onDelete = async () => {
     if (!window.confirm('⚠️ Delete your profile? This will NOT delete your Cognito account. Continue?')) return;
     try {
-      const res = await fetch('/api/user', { method: 'DELETE' });
+      const res = await fetch('/user', { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Delete failed');
       toast.success(data.message || 'Account deleted successfully');
-      await fetch('/api/logout', { method: 'POST' }).catch(() => { });
+      await fetch('/logout', { method: 'POST' }).catch(() => { });
       navigate('/');
       window.location.reload();
     } catch (e) {
