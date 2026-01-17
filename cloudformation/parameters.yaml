@@ -1,0 +1,8 @@
+EnvironmentName: dev
+DomainName: brewcraft.rocks
+HostedZoneId: Z05960073426N6KBSQBUN
+KeyPairName: vockey
+InstanceType: t2.micro
+MinSize: 2
+MaxSize: 4
+DesiredCapacity: 2
