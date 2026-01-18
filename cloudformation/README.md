@@ -7,7 +7,6 @@
    - Application Load Balancer
    - Auto Scaling Group (2-4 EC2 instances)
    - Route53 DNS record
-   - 7 DynamoDB tables
    - CloudWatch alarms
 
 2. **parameters.yaml** - Stack parameters (EDIT THIS FIRST)
@@ -20,11 +19,10 @@
 
 ### Configuration Ready ✅
 All parameters are configured for AWS Learner Lab:
-- Route53 Hosted Zone ID: Z05960073426N6KBSQBUN
+- Route53 Hosted Zone ID: Z05960073426N6KBSQBUN (need update when creating a new hostzone)
 - EC2 Key Pair: vockey (AWS Learner Lab default)
 - IAM Profile: LabUserProfile (AWS Learner Lab restriction)
 
-No additional configuration needed - ready to deploy!
 
 ## Deploy
 
@@ -54,7 +52,6 @@ aws cloudformation create-stack \
 - **Route53**: brewcraft.rocks → ALB (with failover to S3)
 - **S3 Bucket**: Failover static website for maintenance/errors
 - **Health Check**: Monitors ALB and triggers failover if needed
-- **DynamoDB**: 7 tables for application data
 - **Cost**: ~$45-50/month
 
 ## Timeline
@@ -93,11 +90,3 @@ curl http://brewcraft.rocks
 ```bash
 aws cloudformation delete-stack --stack-name brewcraft-infrastructure
 ```
-
-## Support
-
-See [INFRASTRUCTURE-DEPLOYMENT.md](../docs/INFRASTRUCTURE-DEPLOYMENT.md) for:
-- Troubleshooting guide
-- Detailed verification steps
-- Cost breakdown
-- Architecture details
