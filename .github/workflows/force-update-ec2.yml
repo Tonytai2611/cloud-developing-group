@@ -6,7 +6,7 @@ on:
       branch:
         description: "Branch to run the workflow on"
         required: true
-        default: dev #check if this is needed
+        default: dev
 
 jobs:
   update-ec2:
@@ -57,7 +57,7 @@ jobs:
           fi
 
           for IP in $INSTANCE_IPS; do
-              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ec2-user@$IP << ENDSSH
+              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ec2-user@$IP <<- ENDSSH
                   set -e
 
                   aws ecr get-login-password --region ${AWS_REGION} | \
