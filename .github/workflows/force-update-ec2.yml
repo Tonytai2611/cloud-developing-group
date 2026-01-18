@@ -57,26 +57,21 @@ jobs:
           fi
 
           for IP in $INSTANCE_IPS; do
-              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ec2-user@$IP #<<- ENDSSH "
+              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ec2-user@$IP <<- ENDSSH
                   set -e
-
-                  aws ecr get-login-password --region ${AWS_REGION} | \
-                      sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.${AWS_REGION}.amazonaws.com
-
+                  aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.${AWS_REGION}.amazonaws.com
                   sudo docker stop brewcraft-app 2>/dev/null || true
                   sudo docker rm brewcraft-app 2>/dev/null || true
                   sudo docker rmi ${ECR_IMAGE} 2>/dev/null || true
                   sudo docker pull ${ECR_IMAGE}
-
                   sudo docker run -d \
                       --name brewcraft-app \
                       --restart unless-stopped \
                       -p 3000:80 \
                       ${ECR_IMAGE}
-
                   sleep 3
                   curl -f http://localhost:3000/health || echo "Health check warning"
-              "# ENDSSH
+            ENDSSH
 
               if [ $? -eq 0 ]; then
                   echo "✓ Updated $IP"
