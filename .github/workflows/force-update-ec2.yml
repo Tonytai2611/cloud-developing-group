@@ -57,7 +57,7 @@ jobs:
           fi
 
           for IP in $INSTANCE_IPS; do
-              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ec2-user@$IP <<- ENDSSH
+              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ec2-user@$IP #<<- ENDSSH "
                   set -e
 
                   aws ecr get-login-password --region ${AWS_REGION} | \
@@ -76,7 +76,7 @@ jobs:
 
                   sleep 3
                   curl -f http://localhost:3000/health || echo "Health check warning"
-              ENDSSH
+              "# ENDSSH
 
               if [ $? -eq 0 ]; then
                   echo "✓ Updated $IP"
