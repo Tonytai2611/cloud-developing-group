@@ -31,14 +31,14 @@ jobs:
 
       - name: Configure SSH Key
         run: |
-          echo "${{ secrets.SSH_KEY }}" > $HOME/.ssh/labsuser.pem
-          chmod 600 $HOME/.ssh/labsuser.pem
+          echo "${{ secrets.SSH_KEY }}" > $HOME/.ssh/vockey.pem
+          chmod 600 $HOME/.ssh/vockey.pem
 
       - name: Debug SSH Key
         run: |
           echo "Checking SSH key file..."
           ls -l $HOME/.ssh
-          cat $HOME/.ssh/labsuser.pem
+          cat $HOME/.ssh/vockey.pem
 
       - name: Force Update EC2 Instances
         env:
@@ -46,7 +46,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          SSH_KEY: $HOME/.ssh/labsuser.pem
+          SSH_KEY: $HOME/.ssh/vockey.pem
           ECR_IMAGE: 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
         run: |
           INSTANCE_IPS=$(aws ec2 describe-instances \
