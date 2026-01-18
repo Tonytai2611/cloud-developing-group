@@ -183,10 +183,15 @@ const Header = () => {
                         Contact Us
                     </Link>
                     {user && (
-                        <Link to="/chat" className="text-white hover:text-yellow-200 transition font-medium flex items-center gap-2">
-                            <MessageCircle className="w-5 h-5" />
-                            Chat
-                        </Link>
+                        <>
+                            <Link to="/my-bookings" className="text-white hover:text-yellow-200 transition font-medium">
+                                My Bookings
+                            </Link>
+                            <Link to="/chat" className="text-white hover:text-yellow-200 transition font-medium flex items-center gap-2">
+                                <MessageCircle className="w-5 h-5" />
+                                Chat
+                            </Link>
+                        </>
                     )}
                 </div>
 

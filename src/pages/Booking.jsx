@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { useAuth } from '../hooks/useAuth';
 import { tableApi } from '../services/tableApi';
 import { bookingApi } from '../services/bookingApi';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -117,10 +117,10 @@ const BookingCalendar = ({ selectedDate, onSelectDate, currentMonth, setCurrentM
                 onClick={() => isDateAvailable(date) && onSelectDate(date)}
                 disabled={!isDateAvailable(date)}
                 className={`w-full h-full rounded-full flex items-center justify-center text-sm font-medium transition-all ${isSelected(date)
-                    ? 'bg-teal-500 text-white shadow-lg'
-                    : isDateAvailable(date)
-                      ? 'text-teal-600 hover:bg-teal-50 cursor-pointer'
-                      : 'text-gray-300 cursor-not-allowed'
+                  ? 'bg-teal-500 text-white shadow-lg'
+                  : isDateAvailable(date)
+                    ? 'text-teal-600 hover:bg-teal-50 cursor-pointer'
+                    : 'text-gray-300 cursor-not-allowed'
                   } ${isToday(date) && !isSelected(date) ? 'ring-2 ring-teal-500 ring-offset-2' : ''}`}
               >
                 {date.getDate()}
@@ -166,8 +166,8 @@ const TimeSlots = ({ selectedTime, onSelectTime, selectedDate }) => {
             key={time}
             onClick={() => onSelectTime(time)}
             className={`w-full py-3 px-4 rounded-lg border-2 text-center font-medium transition-all ${selectedTime === time
-                ? 'border-teal-500 bg-teal-500 text-white'
-                : 'border-gray-200 hover:border-teal-500 text-teal-600'
+              ? 'border-teal-500 bg-teal-500 text-white'
+              : 'border-gray-200 hover:border-teal-500 text-teal-600'
               }`}
           >
             {formatTime(time)}
@@ -187,7 +187,7 @@ export default function Booking() {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
+  const { user } = useAuth();
   const [step, setStep] = useState(1); // 1: Date/Time, 2: Details
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -196,25 +196,18 @@ export default function Booking() {
   const [formData, setFormData] = useState({
     customerName: '',
     phone: '',
-    email: '',
+    email: user?.email || user?.username || '',
     guests: selectedTable?.seats || 2,
     tableId: selectedTable?.id || '',
     specialRequests: ''
   });
 
   useEffect(() => {
-    async function fetchUserEmail() {
-      try {
-        const user = await getCurrentUser();
-        const email = user.signInDetails?.loginId || user.attributes?.email || '';
-        setUserEmail(email);
-        setFormData(prev => ({ ...prev, email }));
-      } catch (error) {
-        console.log('User not authenticated:', error);
-      }
+    if (user) {
+      const email = user.email || user.username || '';
+      setFormData(prev => ({ ...prev, email }));
     }
-    fetchUserEmail();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchAvailableTables();
@@ -254,14 +247,21 @@ export default function Booking() {
     setLoading(true);
 
     try {
+      // Get user email for userId
+      const userId = user?.email || user?.username || formData.email || 'guest';
+
       const bookingData = {
         ...formData,
+        userId, // Add userId to booking data
         date: formatDateLocal(selectedDate), // Use local timezone format
         time: selectedTime,
         selectedItems,
         total: getTotalPrice(),
         guests: parseInt(formData.guests)
       };
+
+      console.log('🔍 Creating booking with userId:', userId);
+      console.log('🔍 Booking data:', bookingData);
 
       await bookingApi.create(bookingData);
       setSuccess(true);
@@ -533,9 +533,9 @@ export default function Booking() {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            disabled={!!userEmail}
+                            disabled={!!user}
                             required
-                            className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${userEmail ? 'bg-gray-50 cursor-not-allowed' : ''
+                            className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${user ? 'bg-gray-50 cursor-not-allowed' : ''
                               }`}
                             placeholder="you@example.com"
                           />
@@ -708,8 +708,8 @@ export default function Booking() {
                         type="submit"
                         disabled={loading || tables.length === 0}
                         className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${loading || tables.length === 0
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-teal-500 text-white hover:bg-teal-600 hover:shadow-teal-500/30'
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-teal-500 text-white hover:bg-teal-600 hover:shadow-teal-500/30'
                           }`}
                       >
                         {loading ? (
@@ -737,7 +737,7 @@ export default function Booking() {
       </div>
 
       {/* Custom Scrollbar Styles */}
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }

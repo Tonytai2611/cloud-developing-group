@@ -6,14 +6,18 @@ on:
       branch:
         description: "Branch to run the workflow on"
         required: true
-        default: dev #check if this is needed
+        default: dev
 
 jobs:
   update-ec2:
     name: Update EC2 Docker Containers
     runs-on: ubuntu-latest
+    environment: dev
 
     steps:
+      - name: Checkout Credentials
+        uses: actions/checkout@v3
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -22,50 +26,67 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
+      - name: Create .ssh Directory
+        run: mkdir -p $HOME/.ssh
+
+      - name: Configure SSH Key
+        run: |
+          echo "${{ secrets.SSH_KEY }}" > $HOME/.ssh/vockey.pem
+          chmod 600 $HOME/.ssh/vockey.pem
+
+      - name: Debug SSH Key
+        run: |
+          echo "Checking SSH key file..."
+          ls -l $HOME/.ssh
+          echo "First line of key:"
+          head -n 1 $HOME/.ssh/vockey.pem
+          echo "Last line of key:"
+          tail -n 1 $HOME/.ssh/vockey.pem
+          echo "Key file size:"
+          wc -c $HOME/.ssh/vockey.pem
+
       - name: Force Update EC2 Instances
         env:
           AWS_REGION: us-east-1
-          SSH_KEY: $HOME/.ssh/labsuser.pem
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          SSH_KEY: $HOME/.ssh/vockey.pem
           ECR_IMAGE: 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
         run: |
           INSTANCE_IPS=$(aws ec2 describe-instances \
               --filters "Name=tag:Name,Values=dev-brewcraft-instance" "Name=instance-state-name,Values=running" \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --output text)
-
+          
           if [ -z "$INSTANCE_IPS" ]; then
               echo "No running instances found"
               exit 1
           fi
-
+          
           for IP in $INSTANCE_IPS; do
-              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ec2-user@$IP << ENDSSH
+              ssh -i /home/runner/.ssh/vockey.pem -o StrictHostKeyChecking=no ec2-user@$IP << ENDSSH
                   set -e
-
-                  aws ecr get-login-password --region ${AWS_REGION} | \
-                      sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.${AWS_REGION}.amazonaws.com
-
+                  aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.us-east-1.amazonaws.com
                   sudo docker stop brewcraft-app 2>/dev/null || true
                   sudo docker rm brewcraft-app 2>/dev/null || true
-                  sudo docker rmi ${ECR_IMAGE} 2>/dev/null || true
-                  sudo docker pull ${ECR_IMAGE}
-
+                  sudo docker rmi 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest 2>/dev/null || true
+                  sudo docker pull 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
                   sudo docker run -d \
                       --name brewcraft-app \
                       --restart unless-stopped \
                       -p 3000:80 \
-                      ${ECR_IMAGE}
-
+                      533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
                   sleep 3
                   curl -f http://localhost:3000/health || echo "Health check warning"
-              ENDSSH
-
+          ENDSSH
+          
               if [ $? -eq 0 ]; then
                   echo "✓ Updated $IP"
               else
                   echo "✗ Failed to update $IP"
               fi
           done
-
+          
           echo "All instances updated!"
           echo "Wait 30 seconds for ALB health checks, then test: http://brewcraft.rocks"
