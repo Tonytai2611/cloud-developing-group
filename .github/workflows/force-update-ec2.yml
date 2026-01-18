@@ -67,7 +67,7 @@ jobs:
           for IP in $INSTANCE_IPS; do
               ssh -vvv -i /home/runner/.ssh/vockey.pem -o StrictHostKeyChecking=no ec2-user@$IP << 'ENDSSH'
                   set -e
-                  aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.${AWS_REGION}.amazonaws.com
+                  aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.us-east-1.amazonaws.com
                   sudo docker stop brewcraft-app 2>/dev/null || true
                   sudo docker rm brewcraft-app 2>/dev/null || true
                   sudo docker rmi ${ECR_IMAGE} 2>/dev/null || true
