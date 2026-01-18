@@ -5,7 +5,7 @@ A comprehensive cloud-based restaurant and cafe management system built with Rea
 
 ## 🌐 Live System URLs
 
-- **Production Application (Custom Domain)**: [https://brewcraft.rocks](https://brewcraft.rocks)
+- **Production Application (Custom Domain)**: [http://brewcraft.rocks](https://brewcraft.rocks)
 - **Production Application (ALB)**: [http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com](http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com)
 - **API Gateway**: [https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com](https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com)
 
@@ -13,37 +13,7 @@ A comprehensive cloud-based restaurant and cafe management system built with Rea
 
 BrewCraft follows a modern serverless architecture on AWS:
 
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        A[React SPA<br/>Tailwind CSS]
-    end
-    
-    subgraph "AWS Cloud Infrastructure"
-        B[Application Load Balancer]
-        C[EC2 Docker Containers]
-        D[API Gateway]
-        E[Lambda Functions]
-        F[Cognito User Pool]
-        G[DynamoDB Tables]
-    end
-    
-    A -->|HTTPS| B
-    B -->|Route Traffic| C
-    A -->|API Calls| D
-    D -->|Invoke| E
-    E -->|Query/Update| G
-    A -->|Authentication| F
-    F -->|User Data| G
-    
-    style A fill:#61dafb
-    style B fill:#ff9900
-    style C fill:#ff9900
-    style D fill:#ff9900
-    style E fill:#ff9900
-    style F fill:#ff9900
-    style G fill:#ff9900
-```
+![BrewCraft AWS Architecture](./architecture-diagram.png)
 
 ### Architecture Components
 
