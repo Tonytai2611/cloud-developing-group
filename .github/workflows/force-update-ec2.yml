@@ -32,7 +32,7 @@ jobs:
       - name: Configure SSH Key
         run: |
           echo "${{ secrets.SSH_KEY }}" > $HOME/.ssh/labsuser.pem
-          chmod 400 $HOME/.ssh/labsuser.pem
+          chmod 600 $HOME/.ssh/labsuser.pem
 
       - name: Debug SSH Key
         run: |
