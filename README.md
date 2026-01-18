@@ -369,7 +369,8 @@ rm -rf build
 ### DynamoDB
 - Monitor read/write capacity units
 - Check for throttling events
-- Review table metrics
+- Review table metrics 
+
 
 ### Cognito
 - Monitor user pool activity
