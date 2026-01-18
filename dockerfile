@@ -1,23 +1,35 @@
-# Use the official Node.js image as the base image
-FROM node:18-alpine
+# Build stage
+FROM node:18-alpine AS builder
 
-# Set the working directory to /app inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if available) into the container
+# Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
-# Copy the src directory into the container
-COPY src ./src
+# Copy source code
+COPY . .
 
-# Build the Next.js app with a higher memory limit
-RUN node --max-old-space-size=4096 ./node_modules/.bin/next build
+# Build the React app with increased memory
+ENV NODE_OPTIONS=--max-old-space-size=4096
+RUN npm run build
 
-# Expose the port Next.js runs on
-EXPOSE 3000
+# Production stage
+FROM nginx:alpine
 
-# Start the application in production mode
-CMD ["npm", "start"]
+# Copy built app to nginx
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Copy nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

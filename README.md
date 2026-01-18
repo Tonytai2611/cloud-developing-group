@@ -1,4 +1,5 @@
-# ☕ BrewCraft - Restaurant & Cafe Management System
+
+# BrewCraft React App
 
 A comprehensive cloud-based restaurant and cafe management system built with React and deployed on AWS infrastructure. BrewCraft provides a full-featured web application for restaurant operations including table booking, menu management, user authentication, and real-time customer support.
 
@@ -226,7 +227,26 @@ npm run build
 
 The optimized production build will be created in the `build/` folder.
 
-## 🐳 Docker Deployment
+
+## Cloud Formation Stack
+## CloudFormation Stack
+
+Deploy the DynamoDB infrastructure:
+
+```bash
+cd Dynamo/cloudformation
+
+aws cloudformation create-stack \
+  --stack-name restaurant-dynamodb-dev \
+  --template-body file://dynamo-website-stack.yaml \
+  --parameters ParameterKey=EnvironmentName,ParameterValue=dev \
+  --region us-east-1
+```
+
+See [Dynamo/README.md](Dynamo/README.md) for complete infrastructure documentation and [Dynamo/docs/DEPLOYMENT-GUIDE.md](Dynamo/docs/DEPLOYMENT-GUIDE.md) for detailed deployment instructions.
+
+## Linting & Formatting
+>>>>>>> ac07259ff2e5459c22bda1fec9ce44b9462d82a0
 
 ### Build Docker Image
 
