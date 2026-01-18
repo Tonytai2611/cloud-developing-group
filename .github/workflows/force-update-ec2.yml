@@ -65,18 +65,18 @@ jobs:
           fi
           
           for IP in $INSTANCE_IPS; do
-              ssh -vvv -i /home/runner/.ssh/vockey.pem -o StrictHostKeyChecking=no ec2-user@$IP << 'ENDSSH'
+              ssh -i /home/runner/.ssh/vockey.pem -o StrictHostKeyChecking=no ec2-user@$IP << ENDSSH
                   set -e
                   aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin 533266957010.dkr.ecr.us-east-1.amazonaws.com
                   sudo docker stop brewcraft-app 2>/dev/null || true
                   sudo docker rm brewcraft-app 2>/dev/null || true
-                  sudo docker rmi ${ECR_IMAGE} 2>/dev/null || true
-                  sudo docker pull ${ECR_IMAGE}
+                  sudo docker rmi 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest 2>/dev/null || true
+                  sudo docker pull 533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
                   sudo docker run -d \
                       --name brewcraft-app \
                       --restart unless-stopped \
                       -p 3000:80 \
-                      ${ECR_IMAGE}
+                      533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest
                   sleep 3
                   curl -f http://localhost:3000/health || echo "Health check warning"
           ENDSSH
