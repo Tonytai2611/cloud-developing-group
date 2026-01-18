@@ -6,7 +6,7 @@ A comprehensive cloud-based restaurant and cafe management system built with Rea
 ## 🌐 Live System URLs
 
 
-- **Production Application (Custom Domain)**: [http://brewcraft.rocks](https://brewcraft.rocks)
+- **Production Application (Custom Domain)**: [http://brewcraft.rocks](http://brewcraft.rocks)
 
 
 - **Production Application (ALB)**: [http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com](http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com)
@@ -183,10 +183,21 @@ cloud-developing-group/
    VITE_API_GATEWAY_URL=https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com
    ```
 
-4. **Start the development server**
+4. **Start the development servers**
+
+   **Backend Server (Express.js):**
+   ```bash
+   npm run server
+   ```
+   The backend API will start on [http://localhost:3001](http://localhost:3001)
+
+   **Frontend Application (React):**
    ```bash
    npm start
    ```
+   The frontend will start on [http://localhost:3000](http://localhost:3000)
+
+   > **Note:** Run both commands in separate terminal windows for full-stack development.
 
 5. **Open your browser**
    
