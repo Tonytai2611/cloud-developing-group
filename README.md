@@ -5,7 +5,7 @@ A comprehensive cloud-based restaurant and cafe management system built with Rea
 
 ## 🌐 Live System URLs
 
-- **Production Application (Custom Domain)**: [https://brewcraft.rocks](https://brewcraft.rocks)
+- **Production Application (Custom Domain)**: [https://brewcraft.rocks](http://brewcraft.rocks)
 - **Production Application (ALB)**: [http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com](http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com)
 - **API Gateway**: [https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com](https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com)
 
