@@ -31,11 +31,11 @@ jobs:
 
       - name: Configure SSH Key
         run: |
-          echo "${{ secrets.SSH_KEY }}" > $HOME/.ssh/labsuser.pem
-          chmod 400 $HOME/.ssh/labsuser.pem
+          sudo bash -c "echo '${{ secrets.SSH_KEY }}' > $HOME/.ssh/labsuser.pem"
+          sudo chmod 400 $HOME/.ssh/labsuser.pem
 
       - name: Verify SSH Key
-        run: ls -l $HOME/.ssh/labsuser.pem
+        run: ls -l $HOME/.ssh/
 
       - name: Force Update EC2 Instances
         env:
