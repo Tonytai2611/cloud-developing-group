@@ -12,7 +12,7 @@ export default function UserChat({ userEmail }) {
     const [isConnected, setIsConnected] = useState(false);
 
     const messagesEndRef = useRef(null);
-    const adminEmail = 'nq2019.truongphungtantai261104@gmail.com'; // Fixed admin email
+    const adminEmail = 'tonytai2611@gmail.com'; // Fixed admin email
     const prevUserEmailRef = useRef(userEmail);
 
     // Clear messages when user changes
