@@ -14,8 +14,8 @@ table_table = dynamodb.Table('TABLES_TABLE')
 sns_client = boto3.client('sns')
 
 # Dual SNS Topics for two-way notifications
-ADMIN_TOPIC_ARN = os.environ.get('ADMIN_TOPIC_ARN', 'arn:aws:sns:us-east-1:533266957010:AdminBookingAlerts')
-CUSTOMER_TOPIC_ARN = os.environ.get('CUSTOMER_TOPIC_ARN', 'arn:aws:sns:us-east-1:533266957010:CustomerNotifications')
+ADMIN_TOPIC_ARN = os.environ.get('ADMIN_TOPIC_ARN', 'arn:aws:sns:us-east-1:058053292709:AdminBookingAlerts')
+CUSTOMER_TOPIC_ARN = os.environ.get('CUSTOMER_TOPIC_ARN', 'arn:aws:sns:us-east-1:058053292709:CustomerNotifications')
 
 # CORS headers
 CORS_HEADERS = {

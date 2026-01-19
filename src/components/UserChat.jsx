@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Coffee, Sparkles } from 'lucide-react';
 
 // WebSocket API Gateway URL
-const WS_URL = 'wss://3w3qjyvvl9.execute-api.us-east-1.amazonaws.com/production';
+const WS_URL = 'wss://juz9ngh3u7.execute-api.us-east-1.amazonaws.com/production';
 
 export default function UserChat({ userEmail }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +12,7 @@ export default function UserChat({ userEmail }) {
     const [isConnected, setIsConnected] = useState(false);
 
     const messagesEndRef = useRef(null);
-    const adminEmail = 'tonytai2611@gmail.com'; // Fixed admin email
+    const adminEmail = 'nq2019.truongphungtantai261104@gmail.com'; // Fixed admin email
     const prevUserEmailRef = useRef(userEmail);
 
     // Clear messages when user changes

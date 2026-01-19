@@ -14,7 +14,7 @@ export default function UserProfile() {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  const API_URL = process.env.VITE_API_GATEWAY_URL || 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+  const API_URL = process.env.VITE_API_GATEWAY_URL || 'https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production';
 
   const fetchProfile = async () => {
     setLoading(true);

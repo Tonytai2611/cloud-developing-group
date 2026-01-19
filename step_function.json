@@ -7,7 +7,7 @@
       "Resource": "arn:aws:states:::lambda:invoke",
       "ResultPath": "$.lambdaResult",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:us-east-1:533266957010:function:ValidateInput",
+        "FunctionName": "arn:aws:lambda:us-east-1:058053292709:function:ValidateInput",
         "Payload.$": "$"
       },
       "Retry": [
@@ -31,7 +31,7 @@
       "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
         "Message.$": "States.Format('New message received:\n\nName: {}\nEmail: {}\nMessage: {}', $.lambdaResult.Payload.input.name, $.lambdaResult.Payload.input.email, $.lambdaResult.Payload.input.message)",
-        "TopicArn": "arn:aws:sns:us-east-1:533266957010:AdminContactUs"
+        "TopicArn": "arn:aws:sns:us-east-1:058053292709:AdminContactUs"
       },
       "Next": "SQS SendMessage"
     },
@@ -40,7 +40,7 @@
       "Resource": "arn:aws:states:::sqs:sendMessage",
       "Parameters": {
         "MessageBody.$": "$",
-        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/533266957010/CustomerContact"
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/058053292709/CustomerContact"
       },
       "End": true
     }

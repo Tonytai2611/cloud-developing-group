@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'sonner';
 
-const API_BASE = 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+const API_BASE = 'https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production';
 
 function AdminHeader() {
     const navigate = useNavigate();

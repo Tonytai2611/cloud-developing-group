@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // API Gateway URL from environment
-const API_URL = process.env.VITE_API_GATEWAY_URL || 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+const API_URL = process.env.VITE_API_GATEWAY_URL || 'https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production';
 
 // Auth Context
 const AuthContext = createContext(null);

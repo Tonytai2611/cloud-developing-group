@@ -7,7 +7,7 @@ function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
-const API_BASE = 'https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com';
+const API_BASE = 'https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production';
 
 export default function VerifyEmail() {
   const query = useQuery();

@@ -24,7 +24,7 @@ export default function ContactUs() {
     setLoading(true);
 
     try {
-      const apiUrl = 'https://hn030bsgek.execute-api.us-east-1.amazonaws.com';
+      const apiUrl = 'https://sltt0thqng.execute-api.us-east-1.amazonaws.com';
       const response = await fetch(`${apiUrl}/contact`, {
         method: 'POST',
         headers: {

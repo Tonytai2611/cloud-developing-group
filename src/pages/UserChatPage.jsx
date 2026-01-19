@@ -24,12 +24,12 @@ const UserChatPage = () => {
     const [newMessage, setNewMessage] = useState('');
     const [ws, setWs] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
-    const [adminEmail, setAdminEmail] = useState(null); // Dynamic admin email
     const [notification, setNotification] = useState(null);
     const [userEmail, setUserEmail] = useState(null); // Dynamic user email from cookie
 
     const messagesEndRef = useRef(null);
-    const WS_URL = "wss://3w3qjyvvl9.execute-api.us-east-1.amazonaws.com/production";
+    const WS_URL = "wss://juz9ngh3u7.execute-api.us-east-1.amazonaws.com/production";
+    const adminEmail = 'nq2019.truongphungtantai261104@gmail.com'; // Fixed admin email
 
     // Format timestamp to local Vietnam time
     const formatTimestamp = (timestamp) => {
@@ -93,23 +93,12 @@ const UserChatPage = () => {
             console.log('WebSocket connected for user:', userEmail);
             setIsConnected(true);
             setWs(socket);
-
-            // Ask for online admins immediately
-            socket.send(JSON.stringify({
-                action: 'getUsers',
-                role: 'admin'
-            }));
         };
 
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
-            if (data.type === 'userList' && data.roleFilter === 'admin') {
-                const admins = data.users;
-                if (admins && admins.length > 0) {
-                    setAdminEmail(admins[0].userId);
-                }
-            } else if (data.type === 'messageHistory') {
+            if (data.type === 'messageHistory') {
                 const formattedMessages = data.messages.map(msg => ({
                     id: msg.messageId,
                     text: msg.message,
@@ -166,12 +155,6 @@ const UserChatPage = () => {
 
     const sendMessage = () => {
         if (!newMessage.trim() || !ws || !isConnected) return;
-
-        if (!adminEmail) {
-            alert("No online admin found yet. Trying to find...");
-            ws.send(JSON.stringify({ action: 'getUsers', role: 'admin' }));
-            return;
-        }
 
         const messageData = {
             action: 'sendMessage',
@@ -231,7 +214,7 @@ const UserChatPage = () => {
                 <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-full">
                     <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
                     <span className="text-sm text-gray-600 font-medium">
-                        {isConnected ? (adminEmail ? `Connected` : 'Finding Admin...') : 'Disconnected'}
+                        {isConnected ? 'Connected' : 'Disconnected'}
                     </span>
                 </div>
             </header>
@@ -318,13 +301,12 @@ const UserChatPage = () => {
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                                placeholder={adminEmail ? "Type your message..." : "Waiting for admin..."}
+                                placeholder="Type your message..."
                                 className="flex-1 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent focus:bg-white px-4 py-3 outline-none transition-all"
-                                disabled={!adminEmail}
                             />
                             <button
                                 onClick={sendMessage}
-                                disabled={!adminEmail || !newMessage.trim()}
+                                disabled={!newMessage.trim()}
                                 className="bg-gradient-to-r from-[#14B8A6] to-[#0D9488] hover:from-[#0D9488] hover:to-[#0F766E] text-white px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40"
                             >
                                 <Send size={18} />

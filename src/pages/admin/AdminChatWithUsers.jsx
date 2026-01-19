@@ -43,7 +43,7 @@ const AdminChatWithUsers = () => {
   const [notification, setNotification] = useState(null);
 
   const messagesEndRef = useRef(null);
-  const WS_URL = "wss://3w3qjyvvl9.execute-api.us-east-1.amazonaws.com/production";
+  const WS_URL = "wss://juz9ngh3u7.execute-api.us-east-1.amazonaws.com/production";
 
   // localStorage key for persisting conversations
   const STORAGE_KEY = 'admin_chat_conversations';

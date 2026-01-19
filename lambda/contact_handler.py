@@ -40,7 +40,7 @@ def lambda_handler(event, context):
 
         # Start the Step Function execution
         response = step_functions.start_execution(
-            stateMachineArn='arn:aws:states:us-east-1:533266957010:stateMachine:ContactProcessStateMachine',
+            stateMachineArn='arn:aws:states:us-east-1:058053292709:stateMachine:ContactProcessStateMachine',
             input=json.dumps(step_function_input)
         )
 

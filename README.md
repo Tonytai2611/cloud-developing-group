@@ -10,7 +10,9 @@ A comprehensive cloud-based restaurant and cafe management system built with Rea
 
 
 - **Production Application (ALB)**: [http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com](http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com)
-- **API Gateway**: [https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com](https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com)
+- **API Gateway**: [https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production](https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production)
+- **WebSocket API**: [wss://juz9ngh3u7.execute-api.us-east-1.amazonaws.com/production](wss://juz9ngh3u7.execute-api.us-east-1.amazonaws.com/production)
+- **Contact Us API**: [https://sltt0thqng.execute-api.us-east-1.amazonaws.com](https://sltt0thqng.execute-api.us-east-1.amazonaws.com)
 
 ## 🏗️ System Architecture
 
@@ -179,8 +181,8 @@ cloud-developing-group/
    
    # API Endpoints
    VITE_API_URL=http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com
-   REACT_APP_API_BASE_URL=https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com
-   VITE_API_GATEWAY_URL=https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com
+   REACT_APP_API_BASE_URL=https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production
+   VITE_API_GATEWAY_URL=https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production
    ```
 
 4. **Start the development servers**
@@ -265,7 +267,9 @@ docker-compose up --build
 ### API Endpoints
 - **Custom Domain**: `https://brewcraft.rocks`
 - **ALB URL**: `http://dev-brewcraft-alb-852606234.us-east-1.elb.amazonaws.com`
-- **API Gateway**: `https://4jawv6e5e1.execute-api.us-east-1.amazonaws.com`
+- **API Gateway**: `https://i0okfyvcq6.execute-api.us-east-1.amazonaws.com/production`
+- **WebSocket API**: `wss://juz9ngh3u7.execute-api.us-east-1.amazonaws.com/production`
+- **Contact Us API**: `https://sltt0thqng.execute-api.us-east-1.amazonaws.com`
 
 ### DynamoDB Tables
 - `USERS_TABLE` - User profiles and metadata

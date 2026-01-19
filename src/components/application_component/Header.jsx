@@ -88,8 +88,8 @@ const Header = () => {
     const onSubmit = async (event) => {
         event.preventDefault();
 
-        const clientId = "10g093m0qo9fj9hsar5ngtp8ej";
-        const clientSecret = "1vo0m75h340fhfd828uovmr3nqdeeq3okg559nv85hp2mqvrjvf";
+        const clientId = "6567k65pghoo7m77be0ru8g9dj";
+        const clientSecret = "6apr9d8846s19c1qh7f4e8n75s7greof4n3khh4i1rgc9imgk2a";
         const region = "us-east-1";
 
         const secretHash = generateSecretHash(username, clientId, clientSecret);

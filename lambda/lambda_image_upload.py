@@ -52,7 +52,7 @@ def lambda_handler(event, context):
 
         # Upload to S3
         s3 = boto3.client('s3')
-        bucket_name = 'brewcraft-images'
+        bucket_name = 'brewcraft-images-backup-232332323'
         s3.put_object(
             Bucket=bucket_name,
             Key=file_name,
