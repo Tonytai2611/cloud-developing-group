@@ -126,7 +126,7 @@ def handle_send_message(event, connection_id):
             }
         )
     except Exception as e:
-        print(f" Error saving message: {str(e)}")
+        print(f"❌ Error saving message: {str(e)}")
         raise
 
     
