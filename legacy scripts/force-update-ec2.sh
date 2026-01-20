@@ -7,9 +7,9 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-SSH_KEY="$HOME/.ssh/labsuser.pem"
+SSH_KEY="$HOME/.ssh/vockey.pem"
 AWS_REGION="us-east-1"
-ECR_IMAGE="533266957010.dkr.ecr.us-east-1.amazonaws.com/brewcraft-frontend:latest"
+ECR_IMAGE="058053292709.dkr.ecr.us-east-1.amazonaws.com/brewcraft:latest"
 
 echo "======================================"
 echo "Force Update Docker Containers on EC2"
