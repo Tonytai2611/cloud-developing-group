@@ -1,0 +1,90 @@
+{
+  "description": "ElastiCache Redis configuration for Lambda functions",
+  "environment_variables": {
+    "REDIS_ENDPOINT": "brewcaftcache-lc4eeo.serverless.use1.cache.amazonaws.com",
+    "REDIS_PORT": "6379",
+    "CACHE_TTL": "300",
+    "MENU_TABLE": "MENU_TABLES",
+    "BOOKING_TABLE": "BOOKING_FOODS_TABLE",
+    "TABLES_TABLE": "TABLES_TABLE"
+  },
+  "vpc_configuration": {
+    "note": "Lambda must be in same VPC as ElastiCache",
+    "subnet_ids": [
+      "subnet-086da46ac7d1026b5",
+      "subnet-0fc4c9ff6977a8416"
+    ],
+    "security_group_ids": [
+      "sg-0a7f4f868ccea23d9"
+    ]
+  },
+  "security_group_rules": {
+    "lambda_security_group": {
+      "outbound": [
+        {
+          "port": 6379,
+          "protocol": "tcp",
+          "destination": "0.0.0.0/0",
+          "description": "Allow outbound to Redis (adjust to least-privilege SG if required)"
+        }
+      ]
+    },
+    "elasticache_security_group": {
+      "inbound": [
+        {
+          "port": 6379,
+          "protocol": "tcp",
+          "source": "Lambda Security Group ID",
+          "description": "Allow Lambda to connect"
+        }
+      ]
+    }
+  },
+  "lambda_layer": {
+    "name": "redis-client",
+    "description": "Redis Python client for caching",
+    "runtime": "python3.11",
+    "installation": "Run create-redis-layer.ps1 or create-redis-layer.sh"
+  },
+  "cache_ttl_recommendations": {
+    "booking_list": 180,
+    "booking_item": 300,
+    "user_bookings": 300,
+    "menu_list": 600,
+    "menu_item": 1800,
+    "tables_list": 3600
+  },
+  "monitoring": {
+    "cloudwatch_metrics": [
+      "CacheHits",
+      "CacheMisses",
+      "NetworkBytesIn",
+      "NetworkBytesOut",
+      "CurrConnections"
+    ],
+    "alarms": {
+      "high_cpu": {
+        "metric": "CPUUtilization",
+        "threshold": 75,
+        "description": "CPU usage too high, consider scaling"
+      },
+      "low_memory": {
+        "metric": "FreeableMemory",
+        "threshold": 100000000,
+        "description": "Less than 100MB free"
+      }
+    }
+  },
+  "cost_estimation": {
+    "cache_t3_micro": {
+      "monthly_cost_usd": 12,
+      "memory_gb": 0.5,
+      "suitable_for": "Development and small apps"
+    },
+    "cache_t3_small": {
+      "monthly_cost_usd": 25,
+      "memory_gb": 1.4,
+      "suitable_for": "Production apps"
+    }
+  }
+}
